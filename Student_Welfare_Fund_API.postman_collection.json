@@ -178,18 +178,18 @@
 			"name": "User Profile",
 			"item": [
 				{
-					"name": "Get My Settings",
+					"name": "Get User Profile",
 					"request": {
 						"method": "GET",
 						"header": [
 							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
 							{"key": "Accept", "value": "application/json"}
 						],
-						"url": {"raw": "{{base_url}}/api/v1/me/settings"}
+						"url": {"raw": "{{base_url}}/api/v1/me/edit/profile"}
 					}
 				},
 				{
-					"name": "Update My Settings",
+					"name": "Update User Profile",
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -201,7 +201,7 @@
 							"mode": "raw",
 							"raw": "{\"name\": \"John Doe Updated\", \"email\": \"john.updated@example.com\", \"settings\": {\"notifications\": true, \"language\": \"ar\"}}"
 						},
-						"url": {"raw": "{{base_url}}/api/v1/me/settings"}
+						"url": {"raw": "{{base_url}}/api/v1/me/edit/profile"}
 					}
 				},
 				{

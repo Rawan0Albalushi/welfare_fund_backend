@@ -44,8 +44,8 @@ Route::prefix('v1')->group(function () {
 
         // User profile and settings
         Route::prefix('me')->group(function () {
-            Route::get('/settings', [App\Http\Controllers\Me\SettingsController::class, 'show']);
-            Route::patch('/settings', [App\Http\Controllers\Me\SettingsController::class, 'update']);
+            Route::get('/edit/profile', [App\Http\Controllers\Me\EditProfileController::class, 'show']);
+            Route::patch('/edit/profile', [App\Http\Controllers\Me\EditProfileController::class, 'update']);
             Route::get('/donations', [App\Http\Controllers\Me\DonationsController::class, 'index']);
         });
 
