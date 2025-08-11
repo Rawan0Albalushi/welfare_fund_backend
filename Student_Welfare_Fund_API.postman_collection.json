@@ -1,0 +1,457 @@
+{
+	"info": {
+		"name": "Student Welfare Fund API",
+		"description": "Complete API collection for the Student Welfare Fund application",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"phone\": \"+966501234567\", \"password\": \"password123\", \"password_confirmation\": \"password123\", \"email\": \"user@example.com\", \"name\": \"John Doe\"}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/auth/register"}
+					}
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"phone\": \"+966501234567\", \"password\": \"password123\"}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/auth/login"},
+						"event": [
+							{
+								"listen": "test",
+								"script": {
+									"exec": [
+										"if (pm.response.code === 200) {",
+										"    const response = pm.response.json();",
+										"    pm.environment.set('auth_token', response.data.token);",
+										"    pm.environment.set('user_id', response.data.user.id);",
+										"}"
+									]
+								}
+							}
+						]
+					}
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/auth/me"}
+					}
+				},
+				{
+					"name": "Logout User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/auth/logout"}
+					}
+				}
+			]
+		},
+		{
+			"name": "Public Catalog",
+			"item": [
+				{
+					"name": "Get Categories",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": {"raw": "{{base_url}}/api/v1/categories"}
+					}
+				},
+				{
+					"name": "Get Programs",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": {"raw": "{{base_url}}/api/v1/programs?page=1&per_page=10"}
+					}
+				},
+				{
+					"name": "Get Program Details",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": {"raw": "{{base_url}}/api/v1/programs/1"}
+					}
+				},
+				{
+					"name": "Get Recent Donations",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": {"raw": "{{base_url}}/api/v1/donations/recent?limit=10"}
+					}
+				}
+			]
+		},
+		{
+			"name": "Donations",
+			"item": [
+				{
+					"name": "Create Quick Donation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"},
+							{"key": "Idempotency-Key", "value": "{{$guid}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"program_id\": 1, \"amount\": 100.00, \"donor_name\": \"John Doe\", \"note\": \"For a good cause\"}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/donations"}
+					}
+				},
+				{
+					"name": "Create Gift Donation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"},
+							{"key": "Idempotency-Key", "value": "{{$guid}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"program_id\": 1, \"amount\": 150.00, \"recipient\": {\"name\": \"Jane Doe\", \"phone\": \"+966501234568\", \"message\": \"Happy Birthday!\"}, \"sender\": {\"name\": \"John Doe\", \"phone\": \"+966501234567\", \"hide_identity\": false}}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/donations/gift"}
+					}
+				},
+				{
+					"name": "Check Donation Status",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Accept", "value": "application/json"}],
+						"url": {"raw": "{{base_url}}/api/v1/donations/DN_12345678-1234-1234-1234-123456789012/status"}
+					}
+				},
+				{
+					"name": "Payment Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"},
+							{"key": "X-Webhook-Signature", "value": "{{webhook_signature}}"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"donation_id\": \"DN_12345678-1234-1234-1234-123456789012\", \"status\": \"paid\", \"amount\": 100.00, \"paid_at\": \"2024-01-15T10:30:00Z\"}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/payments/webhook"}
+					}
+				}
+			]
+		},
+		{
+			"name": "User Profile",
+			"item": [
+				{
+					"name": "Get My Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/me/settings"}
+					}
+				},
+				{
+					"name": "Update My Settings",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"John Doe Updated\", \"email\": \"john.updated@example.com\", \"settings\": {\"notifications\": true, \"language\": \"ar\"}}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/me/settings"}
+					}
+				},
+				{
+					"name": "Get My Donations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/me/donations?page=1&per_page=10"}
+					}
+				}
+			]
+		},
+		{
+			"name": "Student Applications",
+			"item": [
+				{
+					"name": "Create Application",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"program_id\": 1, \"personal\": {\"full_name\": \"Ahmed Mohammed Ali\", \"national_id\": \"1234567890\", \"date_of_birth\": \"2000-05-15\", \"gender\": \"male\", \"address\": \"Riyadh, Saudi Arabia\", \"phone\": \"+966501234567\", \"email\": \"ahmed@example.com\"}, \"academic\": {\"university\": \"King Saud University\", \"faculty\": \"Computer Science\", \"department\": \"Software Engineering\", \"student_id\": \"CS123456\", \"gpa\": 3.8, \"academic_year\": 3}, \"financial\": {\"family_income\": 5000.00, \"family_size\": 6, \"father_occupation\": \"Teacher\", \"mother_occupation\": \"Housewife\", \"monthly_expenses\": 3000.00, \"other_sources\": \"Part-time job\"}}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/students/applications"}
+					}
+				},
+				{
+					"name": "Get My Applications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/students/applications?page=1&per_page=10"}
+					}
+				},
+				{
+					"name": "Get Application Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/students/applications/1"}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin - Categories",
+			"item": [
+				{
+					"name": "Get All Categories (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/admin/categories?page=1&per_page=10"}
+					}
+				},
+				{
+					"name": "Create Category",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"New Category\", \"status\": \"active\"}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/admin/categories"}
+					}
+				},
+				{
+					"name": "Update Category",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"Updated Category Name\", \"status\": \"active\"}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/admin/categories/1"}
+					}
+				},
+				{
+					"name": "Delete Category",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/admin/categories/1"}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin - Programs",
+			"item": [
+				{
+					"name": "Get All Programs (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/admin/programs?page=1&per_page=10"}
+					}
+				},
+				{
+					"name": "Create Program",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"category_id\": 1, \"title\": \"New Program\", \"description\": \"Description of the new program\", \"goal_amount\": 50000.00, \"status\": \"active\", \"start_date\": \"2024-01-01\", \"end_date\": \"2024-12-31\"}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/admin/programs"}
+					}
+				},
+				{
+					"name": "Update Program",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"category_id\": 1, \"title\": \"Updated Program Title\", \"description\": \"Updated description\", \"goal_amount\": 60000.00, \"status\": \"active\", \"start_date\": \"2024-01-01\", \"end_date\": \"2024-12-31\"}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/admin/programs/1"}
+					}
+				},
+				{
+					"name": "Delete Program",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/admin/programs/1"}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin - Applications",
+			"item": [
+				{
+					"name": "Get All Applications (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/admin/applications?page=1&per_page=10&status=under_review"}
+					}
+				},
+				{
+					"name": "Update Application Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"status\": \"accepted\", \"reject_reason\": null}"
+						},
+						"url": {"raw": "{{base_url}}/api/v1/admin/applications/1/status"}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin - Donations",
+			"item": [
+				{
+					"name": "Get All Donations (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{admin_token}}"},
+							{"key": "Accept", "value": "application/json"}
+						],
+						"url": {"raw": "{{base_url}}/api/v1/admin/donations?page=1&per_page=10&status=paid"}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{"key": "base_url", "value": "http://localhost:8000"},
+		{"key": "auth_token", "value": ""},
+		{"key": "admin_token", "value": ""},
+		{"key": "user_id", "value": ""},
+		{"key": "webhook_signature", "value": "your_webhook_signature_here"}
+	]
+}
