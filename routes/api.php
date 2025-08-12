@@ -49,12 +49,12 @@ Route::prefix('v1')->group(function () {
             Route::get('/donations', [App\Http\Controllers\Me\DonationsController::class, 'index']);
         });
 
-        // Student applications
-        Route::prefix('students/applications')->group(function () {
-            Route::post('/', [App\Http\Controllers\Students\ApplicationController::class, 'store']);
-            Route::get('/', [App\Http\Controllers\Students\ApplicationController::class, 'index']);
-            Route::get('/{id}', [App\Http\Controllers\Students\ApplicationController::class, 'show']);
-            Route::post('/{id}/documents', [App\Http\Controllers\Students\ApplicationController::class, 'uploadDocuments']);
+        // Student registration
+        Route::prefix('students/registration')->group(function () {
+            Route::post('/', [App\Http\Controllers\Students\RegistrationController::class, 'store']);
+            Route::get('/', [App\Http\Controllers\Students\RegistrationController::class, 'index']);
+            Route::get('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'show']);
+            Route::post('/{id}/documents', [App\Http\Controllers\Students\RegistrationController::class, 'uploadDocuments']);
         });
 
         // Admin routes (require admin role)

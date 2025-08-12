@@ -23,30 +23,31 @@ class CreateApplicationRequest extends FormRequest
     {
         return [
             'program_id' => 'required|exists:programs,id',
+            
+            // Personal Information
             'personal' => 'required|array',
             'personal.full_name' => 'required|string|max:255',
-            'personal.national_id' => 'required|string|max:50',
-            'personal.date_of_birth' => 'required|date',
-            'personal.gender' => 'required|in:male,female',
-            'personal.address' => 'required|string|max:500',
-            'personal.phone' => 'required|string|regex:/^[0-9+\-\s()]+$/',
+            'personal.student_id' => 'required|string|max:50',
             'personal.email' => 'nullable|email',
+            'personal.phone' => 'required|string|regex:/^[0-9+\-\s()]+$/',
+            'personal.gender' => 'required|in:male,female',
             
+            // Academic Information
             'academic' => 'required|array',
             'academic.university' => 'required|string|max:255',
-            'academic.faculty' => 'required|string|max:255',
-            'academic.department' => 'required|string|max:255',
-            'academic.student_id' => 'required|string|max:50',
-            'academic.gpa' => 'required|numeric|min:0|max:4',
+            'academic.college' => 'required|string|max:255',
+            'academic.major' => 'required|string|max:255',
+            'academic.program' => 'required|string|max:255',
             'academic.academic_year' => 'required|integer|min:1|max:6',
+            'academic.gpa' => 'required|numeric|min:0|max:4',
             
+            // Financial Information
             'financial' => 'required|array',
-            'financial.family_income' => 'required|numeric|min:0',
-            'financial.family_size' => 'required|integer|min:1',
-            'financial.father_occupation' => 'nullable|string|max:255',
-            'financial.mother_occupation' => 'nullable|string|max:255',
-            'financial.monthly_expenses' => 'required|numeric|min:0',
-            'financial.other_sources' => 'nullable|string|max:500',
+            'financial.income_level' => 'required|in:low,medium,high',
+            'financial.family_size' => 'required|in:1-3,4-6,7-9,10+',
+            
+            // Documents
+            'id_card_image' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:10240', // 10MB max
         ];
     }
 
@@ -60,40 +61,43 @@ class CreateApplicationRequest extends FormRequest
         return [
             'program_id.required' => 'Program is required.',
             'program_id.exists' => 'Selected program does not exist.',
+            
+            // Personal Information
             'personal.required' => 'Personal information is required.',
             'personal.full_name.required' => 'Full name is required.',
-            'personal.national_id.required' => 'National ID is required.',
-            'personal.date_of_birth.required' => 'Date of birth is required.',
-            'personal.gender.required' => 'Gender is required.',
-            'personal.address.required' => 'Address is required.',
+            'personal.student_id.required' => 'Student ID is required.',
             'personal.phone.required' => 'Phone number is required.',
             'personal.phone.regex' => 'Please enter a valid phone number.',
+            'personal.gender.required' => 'Gender is required.',
+            'personal.gender.in' => 'Gender must be male or female.',
             'personal.email.email' => 'Please enter a valid email address.',
             
+            // Academic Information
             'academic.required' => 'Academic information is required.',
             'academic.university.required' => 'University is required.',
-            'academic.faculty.required' => 'Faculty is required.',
-            'academic.department.required' => 'Department is required.',
-            'academic.student_id.required' => 'Student ID is required.',
-            'academic.gpa.required' => 'GPA is required.',
-            'academic.gpa.numeric' => 'GPA must be a number.',
-            'academic.gpa.min' => 'GPA must be at least 0.',
-            'academic.gpa.max' => 'GPA cannot exceed 4.',
+            'academic.college.required' => 'College is required.',
+            'academic.major.required' => 'Major is required.',
+            'academic.program.required' => 'Program is required.',
             'academic.academic_year.required' => 'Academic year is required.',
             'academic.academic_year.integer' => 'Academic year must be a whole number.',
             'academic.academic_year.min' => 'Academic year must be at least 1.',
             'academic.academic_year.max' => 'Academic year cannot exceed 6.',
+            'academic.gpa.required' => 'GPA is required.',
+            'academic.gpa.numeric' => 'GPA must be a number.',
+            'academic.gpa.min' => 'GPA must be at least 0.',
+            'academic.gpa.max' => 'GPA cannot exceed 4.',
             
+            // Financial Information
             'financial.required' => 'Financial information is required.',
-            'financial.family_income.required' => 'Family income is required.',
-            'financial.family_income.numeric' => 'Family income must be a number.',
-            'financial.family_income.min' => 'Family income must be at least 0.',
+            'financial.income_level.required' => 'Income level is required.',
+            'financial.income_level.in' => 'Income level must be low, medium, or high.',
             'financial.family_size.required' => 'Family size is required.',
-            'financial.family_size.integer' => 'Family size must be a whole number.',
-            'financial.family_size.min' => 'Family size must be at least 1.',
-            'financial.monthly_expenses.required' => 'Monthly expenses are required.',
-            'financial.monthly_expenses.numeric' => 'Monthly expenses must be a number.',
-            'financial.monthly_expenses.min' => 'Monthly expenses must be at least 0.',
+            'financial.family_size.in' => 'Family size must be 1-3, 4-6, 7-9, or 10+.',
+            
+            // Documents
+            'id_card_image.file' => 'ID card image must be a file.',
+            'id_card_image.mimes' => 'ID card image must be a JPG, JPEG, PNG, or PDF file.',
+            'id_card_image.max' => 'ID card image must not exceed 10MB.',
         ];
     }
 }

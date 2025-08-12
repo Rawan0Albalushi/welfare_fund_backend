@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Ramsey\Uuid\Uuid;
 
-class StudentApplication extends Model
+class StudentRegistration extends Model
 {
     use HasFactory;
 
@@ -24,6 +24,7 @@ class StudentApplication extends Model
         'financial_json',
         'status',
         'reject_reason',
+        'id_card_image',
     ];
 
     /**

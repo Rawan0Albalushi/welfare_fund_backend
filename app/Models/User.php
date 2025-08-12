@@ -62,9 +62,9 @@ class User extends Authenticatable
     /**
      * Get the user's student applications.
      */
-    public function studentApplications()
+    public function studentRegistrations()
     {
-        return $this->hasMany(StudentApplication::class);
+        return $this->hasMany(StudentRegistration::class);
     }
 
     /**

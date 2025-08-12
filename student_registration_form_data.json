@@ -1,0 +1,247 @@
+{
+  "form_structure": {
+    "title": "نموذج تسجيل الطالب",
+    "description": "يرجى ملء جميع الحقول المطلوبة لتسجيل طلبك",
+    "sections": [
+      {
+        "title": "البيانات الشخصية",
+        "fields": [
+          {
+            "name": "personal.full_name",
+            "label": "الاسم الكامل",
+            "type": "text",
+            "required": true,
+            "maxLength": 255,
+            "placeholder": "أدخل اسمك الكامل"
+          },
+          {
+            "name": "personal.student_id",
+            "label": "رقم الطالب",
+            "type": "text",
+            "required": true,
+            "maxLength": 50,
+            "placeholder": "أدخل رقم الطالب"
+          },
+          {
+            "name": "personal.email",
+            "label": "البريد الإلكتروني",
+            "type": "email",
+            "required": false,
+            "placeholder": "أدخل بريدك الإلكتروني"
+          },
+          {
+            "name": "personal.phone",
+            "label": "رقم الهاتف",
+            "type": "tel",
+            "required": true,
+            "pattern": "^[0-9+\\-\\s()]+$",
+            "placeholder": "أدخل رقم الهاتف"
+          },
+          {
+            "name": "personal.gender",
+            "label": "الجنس",
+            "type": "select",
+            "required": true,
+            "options": [
+              {"value": "male", "label": "ذكر"},
+              {"value": "female", "label": "أنثى"}
+            ]
+          }
+        ]
+      },
+      {
+        "title": "البيانات الأكاديمية",
+        "fields": [
+          {
+            "name": "academic.university",
+            "label": "الجامعة",
+            "type": "text",
+            "required": true,
+            "maxLength": 255,
+            "placeholder": "أدخل اسم الجامعة"
+          },
+          {
+            "name": "academic.college",
+            "label": "الكلية",
+            "type": "text",
+            "required": true,
+            "maxLength": 255,
+            "placeholder": "أدخل اسم الكلية"
+          },
+          {
+            "name": "academic.major",
+            "label": "التخصص",
+            "type": "text",
+            "required": true,
+            "maxLength": 255,
+            "placeholder": "أدخل التخصص"
+          },
+          {
+            "name": "academic.program",
+            "label": "البرنامج",
+            "type": "text",
+            "required": true,
+            "maxLength": 255,
+            "placeholder": "أدخل البرنامج الدراسي"
+          },
+          {
+            "name": "academic.academic_year",
+            "label": "السنة الدراسية",
+            "type": "select",
+            "required": true,
+            "options": [
+              {"value": 1, "label": "السنة الأولى"},
+              {"value": 2, "label": "السنة الثانية"},
+              {"value": 3, "label": "السنة الثالثة"},
+              {"value": 4, "label": "السنة الرابعة"},
+              {"value": 5, "label": "السنة الخامسة"},
+              {"value": 6, "label": "السنة السادسة"}
+            ]
+          },
+          {
+            "name": "academic.gpa",
+            "label": "المعدل التراكمي",
+            "type": "number",
+            "required": true,
+            "min": 0,
+            "max": 4,
+            "step": 0.01,
+            "placeholder": "أدخل المعدل التراكمي"
+          }
+        ]
+      },
+      {
+        "title": "البيانات المالية",
+        "fields": [
+          {
+            "name": "financial.income_level",
+            "label": "مستوى الدخل",
+            "type": "select",
+            "required": true,
+            "options": [
+              {"value": "low", "label": "منخفض"},
+              {"value": "medium", "label": "متوسط"},
+              {"value": "high", "label": "مرتفع"}
+            ]
+          },
+          {
+            "name": "financial.family_size",
+            "label": "حجم الأسرة",
+            "type": "select",
+            "required": true,
+            "options": [
+              {"value": "1-3", "label": "1-3 أفراد"},
+              {"value": "4-6", "label": "4-6 أفراد"},
+              {"value": "7-9", "label": "7-9 أفراد"},
+              {"value": "10+", "label": "10+ أفراد"}
+            ]
+          }
+        ]
+      },
+      {
+        "title": "المستندات",
+        "fields": [
+          {
+            "name": "id_card_image",
+            "label": "صورة البطاقة الشخصية",
+            "type": "file",
+            "required": false,
+            "accept": "image/jpeg,image/png,application/pdf",
+            "maxSize": "10MB",
+            "description": "يمكن رفع صورة أو ملف PDF بحجم أقصى 10 ميجابايت"
+          }
+        ]
+      }
+    ]
+  },
+  "api_endpoint": {
+    "url": "/api/v1/students/registration",
+    "method": "POST",
+    "content_type": "multipart/form-data",
+    "authentication": "Bearer Token Required"
+  },
+  "example_request": {
+    "program_id": 1,
+    "personal": {
+      "full_name": "أحمد محمد علي",
+      "student_id": "CS123456",
+      "email": "ahmed@example.com",
+      "phone": "+966501234567",
+      "gender": "male"
+    },
+    "academic": {
+      "university": "جامعة الملك سعود",
+      "college": "كلية علوم الحاسب والمعلومات",
+      "major": "هندسة البرمجيات",
+      "program": "بكالوريوس علوم الحاسب",
+      "academic_year": 3,
+      "gpa": 3.8
+    },
+    "financial": {
+      "income_level": "medium",
+      "family_size": "4-6"
+    },
+    "id_card_image": "[file upload]"
+  },
+  "example_response": {
+    "message": "تم إنشاء التسجيل بنجاح",
+    "data": {
+      "id": 1,
+      "registration_id": "REG_uuid-here",
+      "personal": {
+        "full_name": "أحمد محمد علي",
+        "student_id": "CS123456",
+        "email": "ahmed@example.com",
+        "phone": "+966501234567",
+        "gender": "male"
+      },
+      "academic": {
+        "university": "جامعة الملك سعود",
+        "college": "كلية علوم الحاسب والمعلومات",
+        "major": "هندسة البرمجيات",
+        "program": "بكالوريوس علوم الحاسب",
+        "academic_year": 3,
+        "gpa": 3.8
+      },
+      "financial": {
+        "income_level": "medium",
+        "family_size": "4-6"
+      },
+      "status": "under_review",
+      "reject_reason": null,
+      "id_card_image": "students/id_cards/filename.jpg",
+      "program": {
+        "id": 1,
+        "title": "اسم البرنامج"
+      },
+      "user": {
+        "id": 1,
+        "name": "اسم المستخدم"
+      },
+      "created_at": "2024-01-01T00:00:00.000000Z",
+      "updated_at": "2024-01-01T00:00:00.000000Z"
+    }
+  },
+  "validation_rules": {
+    "program_id": "مطلوب، يجب أن يكون موجود في قاعدة البيانات",
+    "personal.full_name": "مطلوب، أقصى 255 حرف",
+    "personal.student_id": "مطلوب، أقصى 50 حرف",
+    "personal.email": "اختياري، يجب أن يكون بريد إلكتروني صحيح",
+    "personal.phone": "مطلوب، يجب أن يكون رقم هاتف صحيح",
+    "personal.gender": "مطلوب، ذكر أو أنثى",
+    "academic.university": "مطلوب، أقصى 255 حرف",
+    "academic.college": "مطلوب، أقصى 255 حرف",
+    "academic.major": "مطلوب، أقصى 255 حرف",
+    "academic.program": "مطلوب، أقصى 255 حرف",
+    "academic.academic_year": "مطلوب، من 1 إلى 6",
+    "academic.gpa": "مطلوب، من 0 إلى 4",
+    "financial.income_level": "مطلوب، منخفض أو متوسط أو مرتفع",
+    "financial.family_size": "مطلوب، 1-3 أو 4-6 أو 7-9 أو 10+",
+    "id_card_image": "اختياري، ملف JPG أو PNG أو PDF، أقصى 10 ميجابايت"
+  },
+  "available_programs_endpoint": {
+    "url": "/api/v1/programs",
+    "method": "GET",
+    "description": "للحصول على قائمة البرامج المتاحة لاختيار program_id"
+  }
+}

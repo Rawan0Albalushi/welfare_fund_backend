@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class StudentApplicationResource extends JsonResource
+class StudentRegistrationResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,11 +17,12 @@ class StudentApplicationResource extends JsonResource
         return [
             'id' => $this->id,
             'registration_id' => $this->registration_id,
-            'personal_json' => $this->personal_json,
-            'academic_json' => $this->academic_json,
-            'financial_json' => $this->financial_json,
+            'personal' => $this->personal_json,
+            'academic' => $this->academic_json,
+            'financial' => $this->financial_json,
             'status' => $this->status,
             'reject_reason' => $this->reject_reason,
+            'id_card_image' => $this->id_card_image,
             'program' => new ProgramResource($this->whenLoaded('program')),
             'user' => new UserResource($this->whenLoaded('user')),
             'created_at' => $this->created_at?->toISOString(),

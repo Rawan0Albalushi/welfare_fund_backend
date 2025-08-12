@@ -57,9 +57,9 @@ class Program extends Model
     /**
      * Get the student applications for this program.
      */
-    public function studentApplications()
+    public function studentRegistrations()
     {
-        return $this->hasMany(StudentApplication::class);
+        return $this->hasMany(StudentRegistration::class);
     }
 
     /**

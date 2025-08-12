@@ -4,63 +4,61 @@ namespace App\Http\Controllers\Students;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Students\CreateApplicationRequest;
-use App\Http\Resources\StudentApplicationResource;
-use App\Models\StudentApplication;
+use App\Http\Resources\StudentRegistrationResource;
+use App\Models\StudentRegistration;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Student Applications",
- *     description="API Endpoints for student application management"
+ *     name="Student Registration",
+ *     description="API Endpoints for student registration management"
  * )
  */
-class ApplicationController extends Controller
+class RegistrationController extends Controller
 {
     /**
      * @OA\Post(
-     *     path="/api/v1/students/applications",
-     *     summary="Create a new student application",
-     *     tags={"Student Applications"},
+     *     path="/api/v1/students/registration",
+     *     summary="Create a new student registration",
+     *     tags={"Student Registration"},
      *     security={{"bearerAuth":{}}},
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(
-     *             required={"program_id","personal","academic","financial"},
-     *             @OA\Property(property="program_id", type="integer", example=1),
-     *             @OA\Property(property="personal", type="object",
-     *                 @OA\Property(property="full_name", type="string", example="Ahmed Mohammed Ali"),
-     *                 @OA\Property(property="national_id", type="string", example="1234567890"),
-     *                 @OA\Property(property="date_of_birth", type="string", format="date", example="2000-05-15"),
-     *                 @OA\Property(property="gender", type="string", enum={"male", "female"}, example="male"),
-     *                 @OA\Property(property="address", type="string", example="Riyadh, Saudi Arabia"),
-     *                 @OA\Property(property="phone", type="string", example="+966501234567"),
-     *                 @OA\Property(property="email", type="string", format="email", example="ahmed@example.com")
-     *             ),
-     *             @OA\Property(property="academic", type="object",
-     *                 @OA\Property(property="university", type="string", example="King Saud University"),
-     *                 @OA\Property(property="faculty", type="string", example="Computer Science"),
-     *                 @OA\Property(property="department", type="string", example="Software Engineering"),
-     *                 @OA\Property(property="student_id", type="string", example="CS123456"),
-     *                 @OA\Property(property="gpa", type="number", format="float", example=3.8),
-     *                 @OA\Property(property="academic_year", type="integer", example=3)
-     *             ),
-     *             @OA\Property(property="financial", type="object",
-     *                 @OA\Property(property="family_income", type="number", example=5000.00),
-     *                 @OA\Property(property="family_size", type="integer", example=6),
-     *                 @OA\Property(property="father_occupation", type="string", example="Teacher"),
-     *                 @OA\Property(property="mother_occupation", type="string", example="Housewife"),
-     *                 @OA\Property(property="monthly_expenses", type="number", example=3000.00),
-     *                 @OA\Property(property="other_sources", type="string", example="Part-time job")
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 required={"program_id","personal","academic","financial"},
+     *                 @OA\Property(property="program_id", type="integer", example=1),
+     *                 @OA\Property(property="personal", type="object",
+     *                     @OA\Property(property="full_name", type="string", example="Ahmed Mohammed Ali"),
+     *                     @OA\Property(property="student_id", type="string", example="CS123456"),
+     *                     @OA\Property(property="email", type="string", format="email", example="ahmed@example.com"),
+     *                     @OA\Property(property="phone", type="string", example="+966501234567"),
+     *                     @OA\Property(property="gender", type="string", enum={"male", "female"}, example="male")
+     *                 ),
+     *                 @OA\Property(property="academic", type="object",
+     *                     @OA\Property(property="university", type="string", example="King Saud University"),
+     *                     @OA\Property(property="college", type="string", example="Computer Science"),
+     *                     @OA\Property(property="major", type="string", example="Software Engineering"),
+     *                     @OA\Property(property="program", type="string", example="Bachelor of Computer Science"),
+     *                     @OA\Property(property="academic_year", type="integer", example=3),
+     *                     @OA\Property(property="gpa", type="number", format="float", example=3.8)
+     *                 ),
+     *                 @OA\Property(property="financial", type="object",
+     *                     @OA\Property(property="income_level", type="string", enum={"low", "medium", "high"}, example="medium"),
+     *                     @OA\Property(property="family_size", type="string", enum={"1-3", "4-6", "7-9", "10+"}, example="4-6")
+     *                 ),
+     *                 @OA\Property(property="id_card_image", type="string", format="binary", description="ID card image (JPG, PNG, PDF)")
      *             )
      *         )
      *     ),
      *     @OA\Response(
      *         response=201,
-     *         description="Application created successfully",
+     *         description="Registration created successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Application created successfully"),
-     *             @OA\Property(property="data", ref="#/components/schemas/StudentApplicationResource")
+     *             @OA\Property(property="message", type="string", example="Registration created successfully"),
+     *             @OA\Property(property="data", ref="#/components/schemas/StudentRegistrationResource")
      *         )
      *     ),
      *     @OA\Response(
@@ -73,26 +71,33 @@ class ApplicationController extends Controller
     {
         $user = $request->user();
 
-        $application = StudentApplication::create([
+        // Handle file upload if provided
+        $idCardPath = null;
+        if ($request->hasFile('id_card_image')) {
+            $idCardPath = $request->file('id_card_image')->store('students/id_cards', 'public');
+        }
+
+        $application = StudentRegistration::create([
             'user_id' => $user->id,
             'program_id' => $request->program_id,
             'personal_json' => $request->personal,
             'academic_json' => $request->academic,
             'financial_json' => $request->financial,
             'status' => 'under_review',
+            'id_card_image' => $idCardPath,
         ]);
 
         return response()->json([
-            'message' => 'Application created successfully',
-            'data' => new StudentApplicationResource($application->load(['program:id,title', 'user:id,name'])),
+            'message' => 'Registration created successfully',
+            'data' => new StudentRegistrationResource($application->load(['program:id,title', 'user:id,name'])),
         ], 201);
     }
 
     /**
      * @OA\Get(
-     *     path="/api/v1/students/applications",
-     *     summary="Get current user's applications",
-     *     tags={"Student Applications"},
+     *     path="/api/v1/students/registration",
+     *     summary="Get current user's registrations",
+     *     tags={"Student Registration"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="page",
@@ -117,10 +122,10 @@ class ApplicationController extends Controller
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Applications retrieved successfully",
+     *         description="Registrations retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Applications retrieved successfully"),
-     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/StudentApplicationResource")),
+     *             @OA\Property(property="message", type="string", example="Registrations retrieved successfully"),
+     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/StudentRegistrationResource")),
      *             @OA\Property(property="meta", type="object",
      *                 @OA\Property(property="current_page", type="integer"),
      *                 @OA\Property(property="per_page", type="integer"),
@@ -139,7 +144,7 @@ class ApplicationController extends Controller
     {
         $user = $request->user();
         
-        $query = StudentApplication::where('user_id', $user->id)
+        $query = StudentRegistration::where('user_id', $user->id)
             ->with(['program:id,title']);
 
         // Filter by status
@@ -151,8 +156,8 @@ class ApplicationController extends Controller
             ->paginate($request->get('per_page', 10));
 
         return response()->json([
-            'message' => 'Applications retrieved successfully',
-            'data' => StudentApplicationResource::collection($applications),
+            'message' => 'Registrations retrieved successfully',
+            'data' => StudentRegistrationResource::collection($applications),
             'meta' => [
                 'current_page' => $applications->currentPage(),
                 'per_page' => $applications->perPage(),
@@ -164,28 +169,28 @@ class ApplicationController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/v1/students/applications/{id}",
-     *     summary="Get a specific application",
-     *     tags={"Student Applications"},
+     *     path="/api/v1/students/registration/{id}",
+     *     summary="Get a specific registration",
+     *     tags={"Student Registration"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
-     *         description="Application ID",
+     *         description="Registration ID",
      *         required=true,
      *         @OA\Schema(type="integer")
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Application retrieved successfully",
+     *         description="Registration retrieved successfully",
      *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="Application retrieved successfully"),
-     *             @OA\Property(property="data", ref="#/components/schemas/StudentApplicationResource")
+     *             @OA\Property(property="message", type="string", example="Registration retrieved successfully"),
+     *             @OA\Property(property="data", ref="#/components/schemas/StudentRegistrationResource")
      *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Application not found"
+     *         description="Registration not found"
      *     )
      * )
      */
@@ -193,26 +198,26 @@ class ApplicationController extends Controller
     {
         $user = $request->user();
         
-        $application = StudentApplication::where('user_id', $user->id)
+        $application = StudentRegistration::where('user_id', $user->id)
             ->with(['program:id,title', 'user:id,name'])
             ->findOrFail($id);
 
         return response()->json([
-            'message' => 'Application retrieved successfully',
-            'data' => new StudentApplicationResource($application),
+            'message' => 'Registration retrieved successfully',
+            'data' => new StudentRegistrationResource($application),
         ]);
     }
 
     /**
      * @OA\Post(
-     *     path="/api/v1/students/applications/{id}/documents",
-     *     summary="Upload documents for an application",
-     *     tags={"Student Applications"},
+     *     path="/api/v1/students/registration/{id}/documents",
+     *     summary="Upload documents for a registration",
+     *     tags={"Student Registration"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
-     *         description="Application ID",
+     *         description="Registration ID",
      *         required=true,
      *         @OA\Schema(type="integer")
      *     ),
@@ -242,7 +247,7 @@ class ApplicationController extends Controller
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Application not found"
+     *         description="Registration not found"
      *     )
      * )
      */
@@ -250,7 +255,7 @@ class ApplicationController extends Controller
     {
         $user = $request->user();
         
-        $application = StudentApplication::where('user_id', $user->id)
+        $application = StudentRegistration::where('user_id', $user->id)
             ->findOrFail($id);
 
         $request->validate([

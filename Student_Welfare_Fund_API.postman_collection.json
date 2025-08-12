@@ -218,10 +218,10 @@
 			]
 		},
 		{
-			"name": "Student Applications",
+			"name": "Student Registration",
 			"item": [
 				{
-					"name": "Create Application",
+					"name": "Create Registration",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -233,29 +233,29 @@
 							"mode": "raw",
 							"raw": "{\"program_id\": 1, \"personal\": {\"full_name\": \"Ahmed Mohammed Ali\", \"national_id\": \"1234567890\", \"date_of_birth\": \"2000-05-15\", \"gender\": \"male\", \"address\": \"Riyadh, Saudi Arabia\", \"phone\": \"+966501234567\", \"email\": \"ahmed@example.com\"}, \"academic\": {\"university\": \"King Saud University\", \"faculty\": \"Computer Science\", \"department\": \"Software Engineering\", \"student_id\": \"CS123456\", \"gpa\": 3.8, \"academic_year\": 3}, \"financial\": {\"family_income\": 5000.00, \"family_size\": 6, \"father_occupation\": \"Teacher\", \"mother_occupation\": \"Housewife\", \"monthly_expenses\": 3000.00, \"other_sources\": \"Part-time job\"}}"
 						},
-						"url": {"raw": "{{base_url}}/api/v1/students/applications"}
+						"url": {"raw": "{{base_url}}/api/v1/students/registration"}
 					}
 				},
 				{
-					"name": "Get My Applications",
+					"name": "Get My Registrations",
 					"request": {
 						"method": "GET",
 						"header": [
 							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
 							{"key": "Accept", "value": "application/json"}
 						],
-						"url": {"raw": "{{base_url}}/api/v1/students/applications?page=1&per_page=10"}
+						"url": {"raw": "{{base_url}}/api/v1/students/registration?page=1&per_page=10"}
 					}
 				},
 				{
-					"name": "Get Application Details",
+					"name": "Get Registration Details",
 					"request": {
 						"method": "GET",
 						"header": [
 							{"key": "Authorization", "value": "Bearer {{auth_token}}"},
 							{"key": "Accept", "value": "application/json"}
 						],
-						"url": {"raw": "{{base_url}}/api/v1/students/applications/1"}
+						"url": {"raw": "{{base_url}}/api/v1/students/registration/1"}
 					}
 				}
 			]

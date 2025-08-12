@@ -228,7 +228,7 @@ Once the application is running, you can access the API documentation at:
 - `programs` - Welfare programs (soft deletes)
 - `donations` - Donation records with UUIDs
 - `gift_meta` - Gift donation metadata
-- `student_applications` - Student applications with JSON fields
+- `student_registrations` - Student registrations with JSON fields
 - `audit_logs` - System audit trail
 
 ### Permission Tables
