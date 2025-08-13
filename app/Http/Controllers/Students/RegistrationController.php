@@ -169,6 +169,100 @@ class RegistrationController extends Controller
 
     /**
      * @OA\Get(
+     *     path="/api/v1/students/registration/my-registration",
+     *     summary="Get current user's latest registration status",
+     *     tags={"Student Registration"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Registration status retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Registration status retrieved successfully"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="registration_id", type="string", example="REG_e7e01d2b-960c-43c1-b0c5-c2f8b5d0d8f8"),
+     *                 @OA\Property(property="status", type="string", enum={"under_review", "accepted", "rejected"}, example="under_review"),
+     *                 @OA\Property(property="rejection_reason", type="string", nullable=true, example="Incomplete documentation"),
+     *                 @OA\Property(property="personal", type="object",
+     *                     @OA\Property(property="full_name", type="string", example="اسم الطالب"),
+     *                     @OA\Property(property="student_id", type="string", example="رقم الطالب"),
+     *                     @OA\Property(property="email", type="string", example="البريد الإلكتروني"),
+     *                     @OA\Property(property="phone", type="string", example="رقم الهاتف"),
+     *                     @OA\Property(property="gender", type="string", enum={"male", "female"}, example="male")
+     *                 ),
+     *                 @OA\Property(property="academic", type="object",
+     *                     @OA\Property(property="university", type="string", example="اسم الجامعة"),
+     *                     @OA\Property(property="college", type="string", example="اسم الكلية"),
+     *                     @OA\Property(property="major", type="string", example="التخصص"),
+     *                     @OA\Property(property="program", type="string", example="اسم البرنامج"),
+     *                     @OA\Property(property="academic_year", type="integer", example=3),
+     *                     @OA\Property(property="gpa", type="number", format="float", example=3.8)
+     *                 ),
+     *                 @OA\Property(property="financial", type="object",
+     *                     @OA\Property(property="income_level", type="string", enum={"low", "medium", "high"}, example="low"),
+     *                     @OA\Property(property="family_size", type="integer", example=6)
+     *                 ),
+     *                 @OA\Property(property="program", type="object",
+     *                     @OA\Property(property="id", type="integer", example=1),
+     *                     @OA\Property(property="title", type="string", example="Emergency Financial Aid")
+     *                 ),
+     *                 @OA\Property(property="created_at", type="string", format="date-time", example="2025-08-12T19:33:12.000000Z"),
+     *                 @OA\Property(property="updated_at", type="string", format="date-time", example="2025-08-12T19:33:12.000000Z")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="No registration found for current user",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="No registration found"),
+     *             @OA\Property(property="data", type="null")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized"
+     *     )
+     * )
+     */
+    public function myRegistration(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        $registration = StudentRegistration::where('user_id', $user->id)
+            ->with(['program:id,title'])
+            ->latest()
+            ->first();
+
+        if (!$registration) {
+            return response()->json([
+                'message' => 'No registration found',
+                'data' => null,
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Registration status retrieved successfully',
+            'data' => [
+                'id' => $registration->id,
+                'registration_id' => $registration->registration_id,
+                'status' => $registration->status,
+                'rejection_reason' => $registration->reject_reason,
+                'personal' => $registration->personal_json,
+                'academic' => $registration->academic_json,
+                'financial' => $registration->financial_json,
+                'program' => $registration->program ? [
+                    'id' => $registration->program->id,
+                    'title' => $registration->program->title,
+                ] : null,
+                'created_at' => $registration->created_at?->toISOString(),
+                'updated_at' => $registration->updated_at?->toISOString(),
+            ],
+        ]);
+    }
+
+    /**
+     * @OA\Get(
      *     path="/api/v1/students/registration/{id}",
      *     summary="Get a specific registration",
      *     tags={"Student Registration"},

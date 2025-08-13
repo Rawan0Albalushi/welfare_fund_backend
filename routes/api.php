@@ -53,6 +53,7 @@ Route::prefix('v1')->group(function () {
         Route::prefix('students/registration')->group(function () {
             Route::post('/', [App\Http\Controllers\Students\RegistrationController::class, 'store']);
             Route::get('/', [App\Http\Controllers\Students\RegistrationController::class, 'index']);
+            Route::get('/my-registration', [App\Http\Controllers\Students\RegistrationController::class, 'myRegistration']);
             Route::get('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'show']);
             Route::post('/{id}/documents', [App\Http\Controllers\Students\RegistrationController::class, 'uploadDocuments']);
         });
