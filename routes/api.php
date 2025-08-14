@@ -17,11 +17,24 @@ use App\Http\Controllers\Donations\DonationController;
 |
 */
 
+// Legacy auth routes for frontend compatibility (without v1 prefix)
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::get('/auth/me', [AuthController::class, 'me'])->middleware('auth:sanctum');
+Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+// Legacy student registration routes for frontend compatibility
+Route::middleware('auth:sanctum')->prefix('students/registration')->group(function () {
+    Route::get('/my-registration', [App\Http\Controllers\Students\RegistrationController::class, 'myRegistration']);
+    Route::put('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'update']);
+});
+
 // Public routes (no authentication required)
 Route::prefix('v1')->group(function () {
     // Public catalog endpoints
     Route::get('/categories', [CatalogController::class, 'categories']);
     Route::get('/programs', [CatalogController::class, 'programs']);
+    Route::get('/programs/support', [CatalogController::class, 'supportPrograms']);
     Route::get('/programs/{id}', [CatalogController::class, 'show']);
     Route::get('/donations/recent', [CatalogController::class, 'recentDonations']);
 
@@ -55,6 +68,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [App\Http\Controllers\Students\RegistrationController::class, 'index']);
             Route::get('/my-registration', [App\Http\Controllers\Students\RegistrationController::class, 'myRegistration']);
             Route::get('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'show']);
+            Route::put('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'update']);
             Route::post('/{id}/documents', [App\Http\Controllers\Students\RegistrationController::class, 'uploadDocuments']);
         });
 

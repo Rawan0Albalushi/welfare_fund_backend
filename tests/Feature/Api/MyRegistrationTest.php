@@ -221,4 +221,121 @@ class MyRegistrationTest extends TestCase
                 'data' => null
             ]);
     }
+
+    public function test_user_can_update_rejected_registration()
+    {
+        // Create a user
+        $user = User::factory()->create();
+        
+        // Create a program
+        $program = Program::factory()->create();
+        
+        // Create a rejected registration
+        $registration = StudentRegistration::factory()->create([
+            'user_id' => $user->id,
+            'program_id' => $program->id,
+            'status' => 'rejected',
+            'reject_reason' => 'Incomplete documentation',
+        ]);
+        
+        // Authenticate the user
+        Sanctum::actingAs($user);
+        
+        // Update data
+        $updateData = [
+            'program_id' => $program->id,
+            'personal' => [
+                'full_name' => 'Updated Name',
+                'student_id' => 'CS789012',
+                'email' => 'updated@example.com',
+                'phone' => '+966501234567',
+                'gender' => 'male'
+            ],
+            'academic' => [
+                'university' => 'Updated University',
+                'college' => 'Updated College',
+                'major' => 'Updated Major',
+                'program' => 'Updated Program',
+                'academic_year' => 4,
+                'gpa' => 3.9
+            ],
+            'financial' => [
+                'income_level' => 'medium',
+                'family_size' => '4-6'
+            ]
+        ];
+        
+        // Make the request
+        $response = $this->putJson("/api/v1/students/registration/{$registration->id}", $updateData);
+        
+        // Assert the response
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Registration updated successfully',
+                'data' => [
+                    'id' => $registration->id,
+                    'status' => 'under_review',
+                    'reject_reason' => null,
+                ]
+            ]);
+        
+        // Check that the data was actually updated
+        $this->assertDatabaseHas('student_registrations', [
+            'id' => $registration->id,
+            'status' => 'under_review',
+            'reject_reason' => null,
+        ]);
+    }
+
+    public function test_user_cannot_update_non_rejected_registration()
+    {
+        // Create a user
+        $user = User::factory()->create();
+        
+        // Create a program
+        $program = Program::factory()->create();
+        
+        // Create an accepted registration
+        $registration = StudentRegistration::factory()->create([
+            'user_id' => $user->id,
+            'program_id' => $program->id,
+            'status' => 'accepted',
+        ]);
+        
+        // Authenticate the user
+        Sanctum::actingAs($user);
+        
+        // Update data
+        $updateData = [
+            'program_id' => $program->id,
+            'personal' => [
+                'full_name' => 'Updated Name',
+                'student_id' => 'CS789012',
+                'email' => 'updated@example.com',
+                'phone' => '+966501234567',
+                'gender' => 'male'
+            ],
+            'academic' => [
+                'university' => 'Updated University',
+                'college' => 'Updated College',
+                'major' => 'Updated Major',
+                'program' => 'Updated Program',
+                'academic_year' => 4,
+                'gpa' => 3.9
+            ],
+            'financial' => [
+                'income_level' => 'medium',
+                'family_size' => '4-6'
+            ]
+        ];
+        
+        // Make the request
+        $response = $this->putJson("/api/v1/students/registration/{$registration->id}", $updateData);
+        
+        // Assert the response
+        $response->assertStatus(403)
+            ->assertJson([
+                'message' => 'Registration cannot be updated. Only rejected registrations can be updated.',
+            ]);
+    }
 }

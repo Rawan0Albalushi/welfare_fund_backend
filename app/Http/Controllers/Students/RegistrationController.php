@@ -372,4 +372,105 @@ class RegistrationController extends Controller
             ],
         ]);
     }
+
+    /**
+     * @OA\Put(
+     *     path="/api/v1/students/registration/{id}",
+     *     summary="Update a rejected registration",
+     *     tags={"Student Registration"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Registration ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 required={"program_id","personal","academic","financial"},
+     *                 @OA\Property(property="program_id", type="integer", example=1),
+     *                 @OA\Property(property="personal", type="object",
+     *                     @OA\Property(property="full_name", type="string", example="Ahmed Mohammed Ali"),
+     *                     @OA\Property(property="student_id", type="string", example="CS123456"),
+     *                     @OA\Property(property="email", type="string", format="email", example="ahmed@example.com"),
+     *                     @OA\Property(property="phone", type="string", example="+966501234567"),
+     *                     @OA\Property(property="gender", type="string", enum={"male", "female"}, example="male")
+     *                 ),
+     *                 @OA\Property(property="academic", type="object",
+     *                     @OA\Property(property="university", type="string", example="King Saud University"),
+     *                     @OA\Property(property="college", type="string", example="Computer Science"),
+     *                     @OA\Property(property="major", type="string", example="Software Engineering"),
+     *                     @OA\Property(property="program", type="string", example="Bachelor of Computer Science"),
+     *                     @OA\Property(property="academic_year", type="integer", example=3),
+     *                     @OA\Property(property="gpa", type="number", format="float", example=3.8)
+     *                 ),
+     *                 @OA\Property(property="financial", type="object",
+     *                     @OA\Property(property="income_level", type="string", enum={"low", "medium", "high"}, example="medium"),
+     *                     @OA\Property(property="family_size", type="string", enum={"1-3", "4-6", "7-9", "10+"}, example="4-6")
+     *                 ),
+     *                 @OA\Property(property="id_card_image", type="string", format="binary", description="ID card image (JPG, PNG, PDF)")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Registration updated successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Registration updated successfully"),
+     *             @OA\Property(property="data", ref="#/components/schemas/StudentRegistrationResource")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Registration not found"
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Registration cannot be updated (not rejected)"
+     *     )
+     * )
+     */
+    public function update(CreateApplicationRequest $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        
+        $registration = StudentRegistration::where('user_id', $user->id)
+            ->findOrFail($id);
+
+        // Only allow updates for rejected registrations
+        if ($registration->status !== 'rejected') {
+            return response()->json([
+                'message' => 'Registration cannot be updated. Only rejected registrations can be updated.',
+            ], 403);
+        }
+
+        // Handle file upload if provided
+        $idCardPath = $registration->id_card_image; // Keep existing image
+        if ($request->hasFile('id_card_image')) {
+            $idCardPath = $request->file('id_card_image')->store('students/id_cards', 'public');
+        }
+
+        $registration->update([
+            'program_id' => $request->program_id,
+            'personal_json' => $request->personal,
+            'academic_json' => $request->academic,
+            'financial_json' => $request->financial,
+            'status' => 'under_review', // Reset to under review
+            'reject_reason' => null, // Clear rejection reason
+            'id_card_image' => $idCardPath,
+        ]);
+
+        return response()->json([
+            'message' => 'Registration updated successfully',
+            'data' => new StudentRegistrationResource($registration->load(['program:id,title', 'user:id,name'])),
+        ]);
+    }
 }

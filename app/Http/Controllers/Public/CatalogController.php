@@ -199,4 +199,47 @@ class CatalogController extends Controller
             'data' => $donations,
         ]);
     }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/programs/support",
+     *     summary="Get support programs for student registration",
+     *     tags={"Public Catalog"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Support programs retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Support programs retrieved successfully"),
+     *             @OA\Property(property="data", type="array", @OA\Items(
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="title", type="string", example="برنامج فرص التعليم العالي"),
+     *                 @OA\Property(property="description", type="string", example="برنامج لدعم الطلاب في الحصول على فرص التعليم العالي والمنح الدراسية"),
+     *                 @OA\Property(property="status", type="string", example="active")
+     *             ))
+     *         )
+     *     )
+     * )
+     */
+    public function supportPrograms()
+    {
+        $supportCategory = Category::where('name', 'برامج الدعم الطلابي')->first();
+        
+        if (!$supportCategory) {
+            return response()->json([
+                'message' => 'Support category not found',
+                'data' => []
+            ], 404);
+        }
+
+        $programs = Program::where('category_id', $supportCategory->id)
+            ->where('status', 'active')
+            ->with('category')
+            ->orderBy('title')
+            ->get();
+
+        return response()->json([
+            'message' => 'Support programs retrieved successfully',
+            'data' => ProgramResource::collection($programs)
+        ]);
+    }
 }
