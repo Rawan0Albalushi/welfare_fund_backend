@@ -18,6 +18,7 @@ class Donation extends Model
     protected $fillable = [
         'donation_id',
         'program_id',
+        'campaign_id',
         'amount',
         'donor_name',
         'type',
@@ -61,6 +62,14 @@ class Donation extends Model
     public function program()
     {
         return $this->belongsTo(Program::class);
+    }
+
+    /**
+     * Get the campaign that owns the donation.
+     */
+    public function campaign()
+    {
+        return $this->belongsTo(Campaign::class);
     }
 
     /**

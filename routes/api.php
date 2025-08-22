@@ -4,7 +4,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Public\CatalogController;
-use App\Http\Controllers\Donations\DonationController;
+use App\Http\Controllers\Public\CampaignController;
+use App\Http\Controllers\Public\DonationController;
+use App\Http\Controllers\Donations\DonationController as LegacyDonationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,12 +40,22 @@ Route::prefix('v1')->group(function () {
     Route::get('/programs/{id}', [CatalogController::class, 'show']);
     Route::get('/donations/recent', [CatalogController::class, 'recentDonations']);
 
+    // Public campaign endpoints
+    Route::get('/campaigns', [CampaignController::class, 'index']);
+    Route::get('/campaigns/urgent', [CampaignController::class, 'urgent']);
+    Route::get('/campaigns/featured', [CampaignController::class, 'featured']);
+    Route::get('/campaigns/{id}', [CampaignController::class, 'show']);
+
     // Public donation endpoints
     Route::post('/donations', [DonationController::class, 'store']);
-    Route::post('/donations/gift', [DonationController::class, 'gift']);
-    Route::get('/donations/{id}/status', [DonationController::class, 'status']);
-    Route::get('/payments/callback', [DonationController::class, 'callback']);
-    Route::post('/payments/webhook', [DonationController::class, 'webhook']);
+    Route::get('/donations/quick-amounts', [DonationController::class, 'quickAmounts']);
+    Route::get('/programs/{id}/donations', [DonationController::class, 'programDonations']);
+    
+    // Legacy donation endpoints
+    Route::post('/donations/gift', [LegacyDonationController::class, 'gift']);
+    Route::get('/donations/{id}/status', [LegacyDonationController::class, 'status']);
+    Route::get('/payments/callback', [LegacyDonationController::class, 'callback']);
+    Route::post('/payments/webhook', [LegacyDonationController::class, 'webhook']);
 
     // Authentication endpoints
     Route::post('/auth/register', [AuthController::class, 'register']);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\ProgramResource;
+use App\Http\Resources\SupportProgramResource;
 use App\Models\Category;
 use App\Models\Program;
 use App\Services\DonationsService;
@@ -99,7 +100,9 @@ class CatalogController extends Controller
      */
     public function programs(Request $request): JsonResponse
     {
-        $query = Program::active()->with('category');
+        $query = Program::active()->with(['category', 'donations' => function ($query) {
+            $query->where('status', 'paid');
+        }]);
 
         // Filter by category
         if ($request->has('category_id')) {
@@ -129,7 +132,7 @@ class CatalogController extends Controller
     /**
      * @OA\Get(
      *     path="/api/v1/programs/{id}",
-     *     summary="Get a specific program",
+     *     summary="Get a specific program with detailed information",
      *     tags={"Public Catalog"},
      *     @OA\Parameter(
      *         name="id",
@@ -154,7 +157,11 @@ class CatalogController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $program = Program::active()->with('category')->findOrFail($id);
+        $program = Program::active()
+            ->with(['category', 'donations' => function ($query) {
+                $query->where('status', 'paid');
+            }])
+            ->findOrFail($id);
 
         return response()->json([
             'message' => 'Program retrieved successfully',
@@ -222,16 +229,22 @@ class CatalogController extends Controller
      */
     public function supportPrograms()
     {
-        $supportCategory = Category::where('name', 'برامج الدعم الطلابي')->first();
+        // البحث عن فئات برامج الدعم الطلابي (4 فئات)
+        $supportCategories = Category::whereIn('name', [
+            'الإعانة الشهرية',
+            'السكن والنقل',
+            'فرص التعليم العالي',
+            'رسوم الاختبارات'
+        ])->pluck('id');
         
-        if (!$supportCategory) {
+        if ($supportCategories->isEmpty()) {
             return response()->json([
-                'message' => 'Support category not found',
+                'message' => 'Support categories not found',
                 'data' => []
             ], 404);
         }
 
-        $programs = Program::where('category_id', $supportCategory->id)
+        $programs = Program::whereIn('category_id', $supportCategories)
             ->where('status', 'active')
             ->with('category')
             ->orderBy('title')
@@ -239,7 +252,7 @@ class CatalogController extends Controller
 
         return response()->json([
             'message' => 'Support programs retrieved successfully',
-            'data' => ProgramResource::collection($programs)
+            'data' => SupportProgramResource::collection($programs)
         ]);
     }
 }

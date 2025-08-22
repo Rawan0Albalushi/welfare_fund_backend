@@ -19,23 +19,8 @@ class Program extends Model
         'category_id',
         'title',
         'description',
-        'goal_amount',
-        'raised_amount',
+        'image',
         'status',
-        'start_date',
-        'end_date',
-    ];
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'goal_amount' => 'decimal:2',
-        'raised_amount' => 'decimal:2',
-        'start_date' => 'date',
-        'end_date' => 'date',
     ];
 
     /**
@@ -85,17 +70,5 @@ class Program extends Model
     {
         return $query->where('title', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
-    }
-
-    /**
-     * Get the progress percentage of the program.
-     */
-    public function getProgressPercentageAttribute()
-    {
-        if ($this->goal_amount == 0) {
-            return 0;
-        }
-        
-        return min(100, round(($this->raised_amount / $this->goal_amount) * 100, 2));
     }
 }

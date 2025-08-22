@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             ProgramSeeder::class,
             SupportProgramsSeeder::class,
+            CharityProgramsSeeder::class,
+            DonationCampaignsSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();
