@@ -122,6 +122,164 @@ class DonationController extends Controller
     }
 
     /**
+     * @OA\Post(
+     *     path="/api/v1/donations/with-payment",
+     *     summary="Create a donation with payment session",
+     *     tags={"Public Donations"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"amount", "donor_name"},
+     *             @OA\Property(property="program_id", type="integer", example=1),
+     *             @OA\Property(property="campaign_id", type="integer", example=1),
+     *             @OA\Property(property="amount", type="number", format="float", example=100.00),
+     *             @OA\Property(property="donor_name", type="string", example="أحمد محمد"),
+     *             @OA\Property(property="note", type="string", example="تبرع خيري"),
+     *             @OA\Property(property="type", type="string", enum={"quick", "gift"}, example="quick"),
+     *             @OA\Property(property="success_url", type="string", example="https://app.com/success"),
+     *             @OA\Property(property="cancel_url", type="string", example="https://app.com/cancel")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Donation and payment session created successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Donation and payment session created successfully"),
+     *             @OA\Property(property="data", type="object",
+     *                 @OA\Property(property="donation", ref="#/components/schemas/DonationResource"),
+     *                 @OA\Property(property="payment_session", type="object",
+     *                     @OA\Property(property="session_id", type="string"),
+     *                     @OA\Property(property="payment_url", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Program or Campaign not found"
+     *     )
+     * )
+     */
+    public function storeWithPayment(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'program_id' => 'nullable|integer|exists:programs,id',
+            'campaign_id' => 'nullable|integer|exists:campaigns,id',
+            'amount' => 'required|numeric|min:1',
+            'donor_name' => 'required|string|max:255',
+            'note' => 'nullable|string|max:1000',
+            'type' => 'nullable|string|in:quick,gift',
+            'success_url' => 'nullable|url',
+            'cancel_url' => 'nullable|url',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // التحقق من أن إما program_id أو campaign_id موجود
+        if (!$request->has('program_id') && !$request->has('campaign_id')) {
+            return response()->json([
+                'message' => 'Either program_id or campaign_id is required',
+            ], 422);
+        }
+
+        // التحقق من أن البرنامج أو الحملة نشطة
+        if ($request->has('program_id')) {
+            $program = Program::active()->find($request->program_id);
+            if (!$program) {
+                return response()->json([
+                    'message' => 'Program not found or not active',
+                ], 404);
+            }
+        }
+
+        if ($request->has('campaign_id')) {
+            $campaign = Campaign::active()->find($request->campaign_id);
+            if (!$campaign) {
+                return response()->json([
+                    'message' => 'Campaign not found or not active',
+                ], 404);
+            }
+        }
+
+        // إنشاء التبرع
+        $donation = Donation::create([
+            'program_id' => $request->program_id,
+            'campaign_id' => $request->campaign_id,
+            'amount' => $request->amount,
+            'donor_name' => $request->donor_name,
+            'note' => $request->note,
+            'type' => $request->type ?? 'quick',
+            'status' => 'pending',
+            'expires_at' => now()->addDays(7), // التبرع صالح لمدة أسبوع
+        ]);
+
+        // تحديث المبلغ المجمع في الحملة فقط (برامج الدعم لا تحتاج لحقول التبرع)
+        if ($request->has('campaign_id')) {
+            $campaign->increment('raised_amount', $request->amount);
+        }
+
+        // Provide default URLs if not provided
+        $successUrl = $request->success_url ?? 'https://studentwelfarefund.com/payment/success';
+        $cancelUrl = $request->cancel_url ?? 'https://studentwelfarefund.com/payment/cancel';
+
+        // إنشاء جلسة الدفع
+        try {
+            $thawaniService = app(\App\Services\ThawaniPaymentService::class);
+            
+            $products = [
+                [
+                    'name' => 'Donation',
+                    'quantity' => 1,
+                    'unit_amount' => (int)($request->amount * 1000), // Convert to baisa
+                ]
+            ];
+
+            $paymentSession = $thawaniService->createSession(
+                $products,
+                $donation->donation_id, // Use donation ID as client reference
+                $successUrl,
+                $cancelUrl
+            );
+
+            return response()->json([
+                'message' => 'Donation and payment session created successfully',
+                'data' => [
+                    'donation' => $donation,
+                    'payment_session' => [
+                        'session_id' => $paymentSession['session_id'],
+                        'payment_url' => $paymentSession['payment_url'],
+                    ]
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            // Log the error
+            \Log::error('Payment session creation failed for donation', [
+                'donation_id' => $donation->donation_id,
+                'error' => $e->getMessage()
+            ]);
+
+            // Return donation created but payment failed
+            return response()->json([
+                'message' => 'Donation created but payment session failed',
+                'data' => [
+                    'donation' => $donation,
+                    'payment_error' => $e->getMessage()
+                ]
+            ], 201);
+        }
+    }
+
+    /**
      * @OA\Get(
      *     path="/api/v1/programs/{id}/donations",
      *     summary="Get donations for a specific program",

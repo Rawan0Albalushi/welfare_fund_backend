@@ -7,6 +7,8 @@ use App\Http\Controllers\Public\CatalogController;
 use App\Http\Controllers\Public\CampaignController;
 use App\Http\Controllers\Public\DonationController;
 use App\Http\Controllers\Donations\DonationController as LegacyDonationController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\WebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +50,7 @@ Route::prefix('v1')->group(function () {
 
     // Public donation endpoints
     Route::post('/donations', [DonationController::class, 'store']);
+    Route::post('/donations/with-payment', [DonationController::class, 'storeWithPayment']);
     Route::get('/donations/quick-amounts', [DonationController::class, 'quickAmounts']);
     Route::get('/programs/{id}/donations', [DonationController::class, 'programDonations']);
     
@@ -56,6 +59,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/donations/{id}/status', [LegacyDonationController::class, 'status']);
     Route::get('/payments/callback', [LegacyDonationController::class, 'callback']);
     Route::post('/payments/webhook', [LegacyDonationController::class, 'webhook']);
+
+    // Payment endpoints
+    Route::post('/payments/create', [PaymentController::class, 'createPayment']);
+    Route::get('/payments/status/{sessionId}', [PaymentController::class, 'getPaymentStatus']);
 
     // Authentication endpoints
     Route::post('/auth/register', [AuthController::class, 'register']);
@@ -104,4 +111,7 @@ Route::prefix('v1')->group(function () {
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+
 });
+
+Route::post('/webhooks/thawani', [WebhookController::class, 'handle']);

@@ -1,0 +1,119 @@
+{
+  "info": {
+    "name": "Thawani Payment Endpoints",
+    "description": "Collection for testing Thawani payment endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Create Donation with Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"campaign_id\": 1,\n  \"amount\": 25.0,\n  \"donor_name\": \"محمد أحمد\",\n  \"note\": \"تبرع خيري\",\n  \"type\": \"quick\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/donations/with-payment",
+          "host": ["{{base_url}}"],
+          "path": ["donations", "with-payment"]
+        },
+        "description": "إنشاء تبرع مع دفع مباشر - الطريقة الأسهل"
+      },
+      "response": []
+    },
+    {
+      "name": "Create Payment Session",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"products\": [\n    {\n      \"name\": \"تبرع خيري\",\n      \"quantity\": 1,\n      \"unit_amount\": 25000\n    }\n  ],\n  \"client_reference_id\": \"donation_123456\",\n  \"success_url\": \"https://example.com/success\",\n  \"cancel_url\": \"https://example.com/cancel\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/payments/create",
+          "host": ["{{base_url}}"],
+          "path": ["payments", "create"]
+        },
+        "description": "إنشاء جلسة دفع منفصلة"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Payment Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/payments/status/checkout_JWZ5AcgRr0VNwtGxeGhopYT0W2yQyv2IjQIC9fBB6d0lGT38Mf",
+          "host": ["{{base_url}}"],
+          "path": ["payments", "status", "checkout_JWZ5AcgRr0VNwtGxeGhopYT0W2yQyv2IjQIC9fBB6d0lGT38Mf"]
+        },
+        "description": "التحقق من حالة الدفع"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Campaigns",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/campaigns",
+          "host": ["{{base_url}}"],
+          "path": ["campaigns"]
+        },
+        "description": "الحصول على قائمة الحملات"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Programs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/programs",
+          "host": ["{{base_url}}"],
+          "path": ["programs"]
+        },
+        "description": "الحصول على قائمة البرامج"
+      },
+      "response": []
+    }
+  ]
+}

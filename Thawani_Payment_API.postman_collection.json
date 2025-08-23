@@ -1,0 +1,200 @@
+{
+  "info": {
+    "name": "Thawani Payment API",
+    "description": "API collection for testing Thawani payment integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Payment Session",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"products\": [\n    {\n      \"name\": \"Donation\",\n      \"quantity\": 1,\n      \"unit_amount\": 5000\n    }\n  ],\n  \"client_reference_id\": \"donation_{{$timestamp}}\",\n  \"success_url\": \"https://your-app.com/success\",\n  \"cancel_url\": \"https://your-app.com/cancel\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/payments/create",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payments", "create"]
+        },
+        "description": "Create a new payment session with Thawani"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Payment Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/payments/status/{{session_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payments", "status", "{{session_id}}"]
+        },
+        "description": "Get payment status for a specific session"
+      },
+      "response": []
+    },
+    {
+      "name": "Test Payment with Different Amounts",
+      "item": [
+        {
+          "name": "1 OMR Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [\n    {\n      \"name\": \"Small Donation\",\n      \"quantity\": 1,\n      \"unit_amount\": 1000\n    }\n  ],\n  \"client_reference_id\": \"donation_1omr_{{$timestamp}}\",\n  \"success_url\": \"https://your-app.com/success\",\n  \"cancel_url\": \"https://your-app.com/cancel\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "5 OMR Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [\n    {\n      \"name\": \"Medium Donation\",\n      \"quantity\": 1,\n      \"unit_amount\": 5000\n    }\n  ],\n  \"client_reference_id\": \"donation_5omr_{{$timestamp}}\",\n  \"success_url\": \"https://your-app.com/success\",\n  \"cancel_url\": \"https://your-app.com/cancel\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "10 OMR Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [\n    {\n      \"name\": \"Large Donation\",\n      \"quantity\": 1,\n      \"unit_amount\": 10000\n    }\n  ],\n  \"client_reference_id\": \"donation_10omr_{{$timestamp}}\",\n  \"success_url\": \"https://your-app.com/success\",\n  \"cancel_url\": \"https://your-app.com/cancel\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "create"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Validation Tests",
+      "item": [
+        {
+          "name": "Empty Products Array",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [],\n  \"client_reference_id\": \"test_ref\",\n  \"success_url\": \"https://your-app.com/success\",\n  \"cancel_url\": \"https://your-app.com/cancel\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid URLs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [\n    {\n      \"name\": \"Test\",\n      \"quantity\": 1,\n      \"unit_amount\": 1000\n    }\n  ],\n  \"client_reference_id\": \"test_ref\",\n  \"success_url\": \"invalid-url\",\n  \"cancel_url\": \"invalid-url\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"products\": [\n    {\n      \"name\": \"Test\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/payments/create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "payments", "create"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://192.168.1.21:8000",
+      "type": "string"
+    },
+    {
+      "key": "session_id",
+      "value": "sess_test_123",
+      "type": "string"
+    }
+  ]
+}
