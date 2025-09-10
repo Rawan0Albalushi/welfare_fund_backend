@@ -60,58 +60,23 @@ Route::prefix('v1')->group(function () {
     Route::get('/payments/callback', [LegacyDonationController::class, 'callback']);
     Route::post('/payments/webhook', [LegacyDonationController::class, 'webhook']);
 
-    // Payment endpoints
+    // Payment endpoints (Thawani)
     Route::post('/payments/create', [PaymentController::class, 'createPayment']);
     Route::get('/payments/status/{sessionId}', [PaymentController::class, 'getPaymentStatus']);
+    Route::get('/payments', [PaymentController::class, 'index']); // ?session_id=...
 
-    // Authentication endpoints
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    // Success/Cancel display pages used by Thawani redirects (عرض فقط)
+    Route::get('/payments/success', [PaymentController::class, 'paymentSuccess']);
+    Route::get('/payments/cancel',  [PaymentController::class, 'paymentCancel']);
 
-    // Protected routes (require authentication)
-    Route::middleware('auth:sanctum')->group(function () {
-        // Auth endpoints
-        Route::get('/auth/me', [AuthController::class, 'me']);
-        Route::post('/auth/logout', [AuthController::class, 'logout']);
-
-        // User profile and settings
-        Route::prefix('me')->group(function () {
-            Route::get('/edit/profile', [App\Http\Controllers\Me\EditProfileController::class, 'show']);
-            Route::patch('/edit/profile', [App\Http\Controllers\Me\EditProfileController::class, 'update']);
-            Route::get('/donations', [App\Http\Controllers\Me\DonationsController::class, 'index']);
-        });
-
-        // Student registration
-        Route::prefix('students/registration')->group(function () {
-            Route::post('/', [App\Http\Controllers\Students\RegistrationController::class, 'store']);
-            Route::get('/', [App\Http\Controllers\Students\RegistrationController::class, 'index']);
-            Route::get('/my-registration', [App\Http\Controllers\Students\RegistrationController::class, 'myRegistration']);
-            Route::get('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'show']);
-            Route::put('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'update']);
-            Route::post('/{id}/documents', [App\Http\Controllers\Students\RegistrationController::class, 'uploadDocuments']);
-        });
-
-        // Admin routes (require admin role)
-        Route::middleware('role:admin')->prefix('admin')->group(function () {
-            // Categories management
-            Route::apiResource('categories', App\Http\Controllers\Admin\CategoryController::class);
-            
-            // Programs management
-            Route::apiResource('programs', App\Http\Controllers\Admin\ProgramController::class);
-            
-            // Applications management
-            Route::get('/applications', [App\Http\Controllers\Admin\ApplicationController::class, 'index']);
-            Route::patch('/applications/{id}/status', [App\Http\Controllers\Admin\ApplicationController::class, 'updateStatus']);
-            
-            // Donations management
-            Route::get('/donations', [App\Http\Controllers\Admin\DonationController::class, 'index']);
-        });
-    });
+    // Webhook (Thawani) - سجّلي هذا المسار في لوحة ثواني
+    Route::post('/payments/webhook/thawani', [WebhookController::class, 'handle']);
 });
 
+// Authenticated user endpoint
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
-
 });
 
+// (اختياري) Alias خارجي للويبهوك خارج v1 — سجّلي واحد فقط في Thawani Dashboard
 Route::post('/webhooks/thawani', [WebhookController::class, 'handle']);
