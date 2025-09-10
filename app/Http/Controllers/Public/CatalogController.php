@@ -229,22 +229,17 @@ class CatalogController extends Controller
      */
     public function supportPrograms()
     {
-        // البحث عن فئات برامج الدعم الطلابي (4 فئات)
-        $supportCategories = Category::whereIn('name', [
-            'الإعانة الشهرية',
-            'السكن والنقل',
-            'فرص التعليم العالي',
-            'رسوم الاختبارات'
-        ])->pluck('id');
+        // البحث عن فئة برامج الدعم الطلابي
+        $supportCategory = Category::where('name', 'برامج الدعم الطلابي')->first();
         
-        if ($supportCategories->isEmpty()) {
+        if (!$supportCategory) {
             return response()->json([
-                'message' => 'Support categories not found',
+                'message' => 'Support category not found',
                 'data' => []
             ], 404);
         }
 
-        $programs = Program::whereIn('category_id', $supportCategories)
+        $programs = Program::where('category_id', $supportCategory->id)
             ->where('status', 'active')
             ->with('category')
             ->orderBy('title')

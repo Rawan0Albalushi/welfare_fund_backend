@@ -29,8 +29,11 @@ Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth
 
 // Legacy student registration routes for frontend compatibility
 Route::middleware('auth:sanctum')->prefix('students/registration')->group(function () {
+    Route::post('/', [App\Http\Controllers\Students\RegistrationController::class, 'store']);
     Route::get('/my-registration', [App\Http\Controllers\Students\RegistrationController::class, 'myRegistration']);
+    Route::get('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'show']);
     Route::put('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'update']);
+    Route::post('/{id}/documents', [App\Http\Controllers\Students\RegistrationController::class, 'uploadDocuments']);
 });
 
 // Public routes (no authentication required)
@@ -71,6 +74,15 @@ Route::prefix('v1')->group(function () {
 
     // Webhook (Thawani) - سجّلي هذا المسار في لوحة ثواني
     Route::post('/payments/webhook/thawani', [WebhookController::class, 'handle']);
+
+    // Student registration routes (v1 prefix for frontend compatibility)
+    Route::middleware('auth:sanctum')->prefix('students/registration')->group(function () {
+        Route::post('/', [App\Http\Controllers\Students\RegistrationController::class, 'store']);
+        Route::get('/my-registration', [App\Http\Controllers\Students\RegistrationController::class, 'myRegistration']);
+        Route::get('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'show']);
+        Route::put('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'update']);
+        Route::post('/{id}/documents', [App\Http\Controllers\Students\RegistrationController::class, 'uploadDocuments']);
+    });
 });
 
 // Authenticated user endpoint
