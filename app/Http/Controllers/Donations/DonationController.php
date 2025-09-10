@@ -76,7 +76,7 @@ class DonationController extends Controller
 
         $donation = $this->donationsService->createQuickDonation(
             $request->validated(),
-            $request->user()?->id
+            $request->user()->id // مطلوب الآن بسبب middleware
         );
 
         return response()->json([
@@ -150,7 +150,7 @@ class DonationController extends Controller
 
         $donation = $this->donationsService->createGiftDonation(
             $request->validated(),
-            $request->user()?->id
+            $request->user()->id // مطلوب الآن بسبب middleware
         );
 
         return response()->json([

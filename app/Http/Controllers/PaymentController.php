@@ -143,6 +143,7 @@ class PaymentController extends Controller
                 'note'         => $request->note,
                 'type'         => $request->type ?? 'quick',
                 'status'       => 'pending',
+                'user_id'      => $request->user()?->id, // ربط التبرع بالمستخدم إذا كان مسجل دخول
                 'expires_at'   => now()->addDays(7),
             ]);
 

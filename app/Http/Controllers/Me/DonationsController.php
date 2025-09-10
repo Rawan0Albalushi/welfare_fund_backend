@@ -74,31 +74,129 @@ class DonationsController extends Controller
     {
         $user = $request->user();
         
-        $query = Donation::where('user_id', $user->id)
-            ->with(['program:id,title', 'giftMeta']);
+        // إنشاء query واحد يجمع جميع التبرعات
+        $query = Donation::where(function ($q) use ($user) {
+            // التبرعات المرتبطة مباشرة بالمستخدم
+            $q->where('user_id', $user->id)
+              // التبرعات المرتبطة برقم الهاتف (للتبرعات القديمة)
+              ->orWhere(function ($subQ) use ($user) {
+                  $subQ->whereNull('user_id')
+                       ->whereJsonContains('payload->phone', $user->phone);
+              })
+              // التبرعات المرتبطة بالاسم (للتبرعات القديمة)
+              ->orWhere(function ($subQ) use ($user) {
+                  $subQ->whereNull('user_id')
+                       ->where('donor_name', $user->name);
+              });
+        })
+        ->with(['program:id,title', 'giftMeta', 'campaign:id,title']);
 
-        // Filter by status
+        // تطبيق الفلاتر
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
 
-        // Filter by type
         if ($request->has('type')) {
             $query->where('type', $request->type);
         }
 
+        // ترتيب النتائج
         $donations = $query->orderBy('created_at', 'desc')
             ->paginate($request->get('per_page', 10));
+
+        // إضافة إحصائيات (جميع التبرعات المرتبطة بالمستخدم)
+        $userDonationsQuery = Donation::where(function ($q) use ($user) {
+            $q->where('user_id', $user->id)
+              ->orWhere(function ($subQ) use ($user) {
+                  $subQ->whereNull('user_id')
+                       ->whereJsonContains('payload->phone', $user->phone);
+              })
+              ->orWhere(function ($subQ) use ($user) {
+                  $subQ->whereNull('user_id')
+                       ->where('donor_name', $user->name);
+              });
+        });
+        
+        $stats = [
+            'total_donations' => $userDonationsQuery->count(),
+            'total_amount' => $userDonationsQuery->sum('amount'),
+            'paid_donations' => $userDonationsQuery->where('status', 'paid')->count(),
+            'pending_donations' => $userDonationsQuery->where('status', 'pending')->count(),
+        ];
 
         return response()->json([
             'message' => 'Donations retrieved successfully',
             'data' => DonationResource::collection($donations),
+            'stats' => $stats,
             'meta' => [
                 'current_page' => $donations->currentPage(),
                 'per_page' => $donations->perPage(),
                 'total' => $donations->total(),
                 'last_page' => $donations->lastPage(),
             ],
+        ]);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/me/donations/{id}",
+     *     summary="Get a specific donation for the current user",
+     *     tags={"User Donations"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Donation ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Donation retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Donation retrieved successfully"),
+     *             @OA\Property(property="data", ref="#/components/schemas/DonationResource")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Donation not found"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized"
+     *     )
+     * )
+     */
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        
+        // البحث عن التبرع مع التحقق من ملكية المستخدم
+        $donation = Donation::where('id', $id)
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                      ->orWhere(function ($q) use ($user) {
+                          $q->whereNull('user_id')
+                            ->whereJsonContains('payload->phone', $user->phone);
+                      })
+                      ->orWhere(function ($q) use ($user) {
+                          $q->whereNull('user_id')
+                            ->where('donor_name', $user->name);
+                      });
+            })
+            ->with(['program:id,title', 'giftMeta', 'campaign:id,title'])
+            ->first();
+
+        if (!$donation) {
+            return response()->json([
+                'message' => 'Donation not found or access denied',
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Donation retrieved successfully',
+            'data' => new DonationResource($donation),
         ]);
     }
 }

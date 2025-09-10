@@ -9,6 +9,7 @@ use App\Http\Controllers\Public\DonationController;
 use App\Http\Controllers\Donations\DonationController as LegacyDonationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\Me\DonationsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,13 +53,15 @@ Route::prefix('v1')->group(function () {
     Route::get('/campaigns/{id}', [CampaignController::class, 'show']);
 
     // Public donation endpoints
-    Route::post('/donations', [DonationController::class, 'store']);
-    Route::post('/donations/with-payment', [DonationController::class, 'storeWithPayment']);
+    Route::post('/donations/with-payment', [DonationController::class, 'storeWithPayment'])->middleware('auth:sanctum');
+    Route::post('/donations', [DonationController::class, 'store'])->middleware('auth:sanctum');
+    Route::get('/donations/{id}', [DonationController::class, 'show'])->middleware('auth:sanctum');
     Route::get('/donations/quick-amounts', [DonationController::class, 'quickAmounts']);
     Route::get('/programs/{id}/donations', [DonationController::class, 'programDonations']);
     
-    // Legacy donation endpoints
-    Route::post('/donations/gift', [LegacyDonationController::class, 'gift']);
+    // Legacy donation endpoints (with user linking)
+    Route::post('/donations', [LegacyDonationController::class, 'store'])->middleware('auth:sanctum');
+    Route::post('/donations/gift', [LegacyDonationController::class, 'gift'])->middleware('auth:sanctum');
     Route::get('/donations/{id}/status', [LegacyDonationController::class, 'status']);
     Route::get('/payments/callback', [LegacyDonationController::class, 'callback']);
     Route::post('/payments/webhook', [LegacyDonationController::class, 'webhook']);
@@ -82,6 +85,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'show']);
         Route::put('/{id}', [App\Http\Controllers\Students\RegistrationController::class, 'update']);
         Route::post('/{id}/documents', [App\Http\Controllers\Students\RegistrationController::class, 'uploadDocuments']);
+    });
+
+    // User's personal endpoints (require authentication)
+    Route::middleware('auth:sanctum')->prefix('me')->group(function () {
+        Route::get('/donations', [DonationsController::class, 'index']);
+        Route::get('/donations/{id}', [DonationsController::class, 'show']);
     });
 });
 

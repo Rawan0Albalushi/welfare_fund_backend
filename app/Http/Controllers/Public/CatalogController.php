@@ -187,10 +187,15 @@ class CatalogController extends Controller
      *         @OA\JsonContent(
      *             @OA\Property(property="message", type="string", example="Recent donations retrieved successfully"),
      *             @OA\Property(property="data", type="array", @OA\Items(
+     *                 @OA\Property(property="id", type="integer", description="Database ID of the donation"),
+     *                 @OA\Property(property="donation_id", type="string", description="Unique donation identifier"),
      *                 @OA\Property(property="donor_name", type="string"),
      *                 @OA\Property(property="amount", type="number"),
+     *                 @OA\Property(property="type", type="string"),
      *                 @OA\Property(property="program_title", type="string"),
-     *                 @OA\Property(property="paid_at", type="string", format="date-time")
+     *                 @OA\Property(property="campaign_title", type="string"),
+     *                 @OA\Property(property="paid_at", type="string", format="date-time"),
+     *                 @OA\Property(property="created_at", type="string", format="date-time")
      *             ))
      *         )
      *     )

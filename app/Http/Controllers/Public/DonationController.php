@@ -107,6 +107,7 @@ class DonationController extends Controller
             'note' => $request->note,
             'type' => $request->type ?? 'quick',
             'status' => 'pending',
+            'user_id' => $request->user()->id, // ربط التبرع بالمستخدم (مطلوب الآن بسبب middleware)
             'expires_at' => now()->addDays(7), // التبرع صالح لمدة أسبوع
         ]);
 
@@ -219,6 +220,7 @@ class DonationController extends Controller
             'note' => $request->note,
             'type' => $request->type ?? 'quick',
             'status' => 'pending',
+            'user_id' => $request->user()->id, // ربط التبرع بالمستخدم (مطلوب الآن بسبب middleware)
             'expires_at' => now()->addDays(7), // التبرع صالح لمدة أسبوع
         ]);
 
@@ -348,6 +350,69 @@ class DonationController extends Controller
                 'total' => $donations->total(),
                 'last_page' => $donations->lastPage(),
             ],
+        ]);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/v1/donations/{id}",
+     *     summary="Get a specific donation",
+     *     tags={"Public Donations"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Donation ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Donation retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Donation retrieved successfully"),
+     *             @OA\Property(property="data", ref="#/components/schemas/DonationResource")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Donation not found or access denied"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized"
+     *     )
+     * )
+     */
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        
+        // البحث عن التبرع مع التحقق من ملكية المستخدم
+        $donation = Donation::where('id', $id)
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                      ->orWhere(function ($q) use ($user) {
+                          $q->whereNull('user_id')
+                            ->whereJsonContains('payload->phone', $user->phone);
+                      })
+                      ->orWhere(function ($q) use ($user) {
+                          $q->whereNull('user_id')
+                            ->where('donor_name', $user->name);
+                      });
+            })
+            ->with(['program:id,title', 'giftMeta', 'campaign:id,title'])
+            ->first();
+
+        if (!$donation) {
+            return response()->json([
+                'message' => 'Donation not found or access denied',
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Donation retrieved successfully',
+            'data' => new DonationResource($donation),
         ]);
     }
 

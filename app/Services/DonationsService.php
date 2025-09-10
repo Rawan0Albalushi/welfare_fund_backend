@@ -26,7 +26,7 @@ class DonationsService
                 'donor_name' => $data['donor_name'] ?? 'Anonymous',
                 'type' => 'quick',
                 'status' => 'pending',
-                'user_id' => $userId,
+                'user_id' => $userId, // يجب أن يكون موجوداً الآن بسبب middleware
                 'note' => $data['note'] ?? null,
                 'expires_at' => Carbon::now()->addHours(24), // 24 hours expiry
             ]);
@@ -58,7 +58,7 @@ class DonationsService
                 'donor_name' => $data['sender']['name'] ?? 'Anonymous',
                 'type' => 'gift',
                 'status' => 'pending',
-                'user_id' => $userId,
+                'user_id' => $userId, // يجب أن يكون موجوداً الآن بسبب middleware
                 'expires_at' => Carbon::now()->addHours(24), // 24 hours expiry
             ]);
 
@@ -148,7 +148,7 @@ class DonationsService
      */
     public function getRecentDonations(int $limit = 10): array
     {
-        $donations = Donation::with(['program:id,title'])
+        $donations = Donation::with(['program:id,title', 'campaign:id,title'])
             ->where('status', 'paid')
             ->orderBy('paid_at', 'desc')
             ->limit($limit)
@@ -156,10 +156,15 @@ class DonationsService
 
         return $donations->map(function ($donation) {
             return [
+                'id' => $donation->id,
+                'donation_id' => $donation->donation_id,
                 'donor_name' => $donation->donor_name,
                 'amount' => $donation->amount,
-                'program_title' => $donation->program->title,
+                'type' => $donation->type,
+                'program_title' => $donation->program?->title,
+                'campaign_title' => $donation->campaign?->title,
                 'paid_at' => $donation->paid_at?->toISOString(),
+                'created_at' => $donation->created_at?->toISOString(),
             ];
         })->toArray();
     }
