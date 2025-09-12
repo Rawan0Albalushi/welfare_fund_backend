@@ -79,9 +79,7 @@ class PaymentController extends Controller
             'products.*.name'        => 'required|string|max:255',
             'products.*.quantity'    => 'required|integer|min:1',
             'products.*.unit_amount' => 'required|integer|min:1', // بيسة
-            'client_reference_id'    => 'nullable|string|max:255',
-            'success_url'            => 'nullable|url',
-            'cancel_url'             => 'nullable|url',
+            'return_origin'          => 'required|string|url',
 
             // Donation related
             'program_id'             => 'nullable|integer|exists:programs,id',
@@ -99,8 +97,15 @@ class PaymentController extends Controller
             ], 422);
         }
 
-        $successUrl = $request->success_url ?? config('services.thawani.success_url');
-        $cancelUrl  = $request->cancel_url  ?? config('services.thawani.cancel_url');
+        // إزالة القيم الافتراضية - يجب تمرير return_origin
+        if (!$request->has('return_origin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'return_origin parameter is required'
+            ], 400);
+        }
+
+        $returnOrigin = rtrim($request->input('return_origin'), '/');
 
         // Either program_id or campaign_id must exist
         if (!$request->has('program_id') && !$request->has('campaign_id')) {
@@ -153,8 +158,7 @@ class PaymentController extends Controller
             $result = $this->thawaniService->createSession(
                 $donation, // تمرير كائن التبرع بدلاً من donation_id
                 $request->products,
-                $successUrl,
-                $cancelUrl
+                $returnOrigin
             );
 
             // استخراج البيانات من النتيجة

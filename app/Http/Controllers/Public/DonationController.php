@@ -168,7 +168,29 @@ class DonationController extends Controller
     public function storeWithPayment(Request $request): JsonResponse
     {
         // المستخدم اختياري - يمكن أن يكون مسجل دخول أو مجهول
-        $user = $request->user();
+        // محاولة قراءة المستخدم من الـ token إذا كان موجوداً
+        $user = null;
+        if ($request->hasHeader('Authorization')) {
+            try {
+                $user = auth('sanctum')->user();
+            } catch (\Exception $e) {
+                \Log::warning('Failed to authenticate user from token', [
+                    'error' => $e->getMessage(),
+                    'auth_header' => $request->header('Authorization')
+                ]);
+            }
+        }
+        
+        \Log::info('DonationController storeWithPayment user check', [
+            'user_id' => $user?->id,
+            'user_name' => $user?->name,
+            'has_auth_header' => $request->hasHeader('Authorization'),
+            'auth_header' => $request->header('Authorization') ? 'present' : 'missing',
+            'auth_header_value' => $request->header('Authorization'),
+            'guard' => auth()->getDefaultDriver(),
+            'check_auth' => auth()->check(),
+            'current_user' => auth()->user()?->id
+        ]);
         $validator = Validator::make($request->all(), [
             'program_id' => 'nullable|integer|exists:programs,id',
             'campaign_id' => 'nullable|integer|exists:campaigns,id',
@@ -225,15 +247,41 @@ class DonationController extends Controller
             'user_id' => $user?->id, // ربط التبرع بالمستخدم إذا كان مسجل دخول
             'expires_at' => now()->addDays(7), // التبرع صالح لمدة أسبوع
         ]);
+        
+        \Log::info('DonationController donation created', [
+            'donation_id' => $donation->donation_id,
+            'user_id' => $donation->user_id,
+            'donor_name' => $donation->donor_name,
+            'amount' => $donation->amount
+        ]);
 
         // تحديث المبلغ المجمع في الحملة فقط (برامج الدعم لا تحتاج لحقول التبرع)
         if ($request->has('campaign_id')) {
             $campaign->increment('raised_amount', $request->amount);
         }
 
-        // Provide default URLs if not provided
-        $successUrl = $request->success_url ?? 'https://studentwelfarefund.com/payment/success';
-        $cancelUrl = $request->cancel_url ?? 'https://studentwelfarefund.com/payment/cancel';
+        // استخدام return_origin لإنشاء URLs ديناميكية
+        $returnOrigin = $request->input('return_origin');
+        
+        \Log::info('DonationController storeWithPayment', [
+            'donation_id' => $donation->donation_id,
+            'return_origin' => $returnOrigin,
+            'all_input' => $request->all()
+        ]);
+        
+        $successUrl = $returnOrigin ? 
+            rtrim($returnOrigin, '/') . '/payment/success' : 
+            'http://localhost:59860/payment/success';
+            
+        $cancelUrl = $returnOrigin ? 
+            rtrim($returnOrigin, '/') . '/payment/cancel' : 
+            'http://localhost:59860/payment/cancel';
+
+        \Log::info('DonationController URLs constructed', [
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+            'return_origin' => $returnOrigin
+        ]);
 
         // إنشاء جلسة الدفع
         try {
@@ -251,7 +299,8 @@ class DonationController extends Controller
                 $donation, // تمرير كائن التبرع
                 $products,
                 $successUrl,
-                $cancelUrl
+                $cancelUrl,
+                $returnOrigin // تمرير return_origin
             );
 
             return response()->json([

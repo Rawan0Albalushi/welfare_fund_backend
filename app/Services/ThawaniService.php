@@ -28,14 +28,37 @@ class ThawaniService
      *
      * @param object $donation           كائن التبرع
      * @param array  $products           [ ['name','quantity','unit_amount(بيسة)'], ... ]
-     * @param string $successUrl         رابط نجاح (https - عام)
-     * @param string $cancelUrl          رابط إلغاء (https - عام)
+     * @param string|null $returnOrigin  أصل الواجهة الأمامية (اختياري)
      * @return array ['session_id','payment_url','raw']
      * @throws Exception
      */
-    public function createSession($donation, array $products, string $successUrl, string $cancelUrl): array
+    public function createSession($donation, array $products, ?string $returnOrigin = null): array
     {
         try {
+            // استخدام return_origin لإنشاء URLs ديناميكية
+            $returnOrigin = $returnOrigin ?? null;
+            
+            $successUrl = $returnOrigin ? 
+                rtrim($returnOrigin, '/') . '/payment/success' : 
+                'http://localhost:49887/payment/success';
+                
+            $cancelUrl = $returnOrigin ? 
+                rtrim($returnOrigin, '/') . '/payment/cancel' : 
+                'http://localhost:49887/payment/cancel';
+
+            // بناء روابط النجاح والإلغاء مع تمرير origin في query parameters
+            $success = "http://192.168.1.21:8000/payment/bridge/success?donation_id={$donation->donation_id}&origin=" . urlencode($successUrl);
+            $cancel = "http://192.168.1.21:8000/payment/bridge/cancel?donation_id={$donation->donation_id}&origin=" . urlencode($cancelUrl);
+
+            \Log::info('THAWANI createSession payload', [
+                'success_url' => $success,
+                'cancel_url'  => $cancel,
+                'client_reference_id' => $donation->donation_id,
+                'return_origin' => $returnOrigin,
+                'success_url_frontend' => $successUrl,
+                'cancel_url_frontend' => $cancelUrl,
+            ]);
+
             $payload = [
                 'client_reference_id' => $donation->donation_id,
                 'mode'                => 'payment',
@@ -46,14 +69,12 @@ class ThawaniService
                         'unit_amount' => (int) $p['unit_amount'], // بيسة
                     ];
                 }, $products),
-                'success_url' => $successUrl,
-                'cancel_url'  => $cancelUrl,
+                'success_url' => $success,
+                'cancel_url'  => $cancel,
                 'metadata'    => [
                     'donation_db_id' => $donation->id
                 ],
             ];
-
-            Log::info('Thawani createSession request', ['payload' => $payload]);
 
             $response = Http::withHeaders([
                 'Content-Type'    => 'application/json',

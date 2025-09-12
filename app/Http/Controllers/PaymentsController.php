@@ -36,8 +36,7 @@ class PaymentsController extends Controller
      *                 @OA\Property(property="quantity", type="integer", example=1),
      *                 @OA\Property(property="unit_amount", type="integer", example=10000, description="المبلغ بالبيسة")
      *             )),
-     *             @OA\Property(property="success_url", type="string", example="https://example.com/success"),
-     *             @OA\Property(property="cancel_url", type="string", example="https://example.com/cancel")
+     *             @OA\Property(property="return_origin", type="string", example="http://localhost:49887", description="Frontend origin URL for redirects")
      *         )
      *     ),
      *     @OA\Response(
@@ -64,8 +63,7 @@ class PaymentsController extends Controller
             'products.*.name' => 'required|string',
             'products.*.quantity' => 'required|integer|min:1',
             'products.*.unit_amount' => 'required|integer|min:1',
-            'success_url' => 'required|url',
-            'cancel_url' => 'required|url',
+            'return_origin' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -97,12 +95,19 @@ class PaymentsController extends Controller
 
             DB::beginTransaction();
 
-            // إنشاء جلسة الدفع
+            // مراقبة return_origin المستلم
+            $returnOrigin = $request->input('return_origin');
+            \Log::info('Payment creation request', [
+                'donation_id' => $request->donation_id,
+                'return_origin' => $returnOrigin,
+                'all_input' => $request->all()
+            ]);
+
+            // إنشاء جلسة الدفع مع تمرير return_origin
             $result = $this->thawaniService->createSession(
                 $donation,
                 $request->products,
-                $request->success_url,
-                $request->cancel_url
+                $returnOrigin
             );
 
             DB::commit();
@@ -228,5 +233,128 @@ class PaymentsController extends Controller
                 'message' => 'فشل في تأكيد الدفع: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Bridge endpoint for successful payment redirects
+     */
+    public function bridgeSuccess(Request $request)
+    {
+        $donationId = $request->query('donation_id');
+        $origin = $request->query('origin', 'http://localhost:49887/payment/success'); // fallback
+        
+        \Log::info('Bridge Success called', [
+            'donation_id' => $donationId,
+            'origin' => $origin,
+            'all_params' => $request->query()
+        ]);
+        
+        if (!$donationId) {
+            $errorUrl = str_replace('/payment/success', '/payment/error', $origin) . '?message=' . urlencode('Donation ID is required');
+            return redirect()->away($errorUrl);
+        }
+
+        $donation = Donation::where('donation_id', $donationId)->first();
+        
+        if (!$donation) {
+            $errorUrl = str_replace('/payment/success', '/payment/error', $origin) . '?message=' . urlencode('Donation not found');
+            return redirect()->away($errorUrl);
+        }
+
+        // تأكيد الحالة من ثواني (idempotent)
+        if ($donation->status !== 'paid' && $donation->payment_session_id) {
+            try {
+                $sessionDetails = $this->thawaniService->getSessionDetails($donation->payment_session_id);
+                $paymentStatus = $sessionDetails['payment_status'] ?? null;
+                
+                if ($paymentStatus === 'paid') {
+                    // تحويل المبلغ من بيسة إلى ريال عماني
+                    $capturedAmount = $sessionDetails['captured_amount'] ?? $sessionDetails['total_amount'] ?? 0;
+                    $paidAmount = $capturedAmount / 1000; // بيسة -> ريال
+                    
+                    $donation->update([
+                        'status' => 'paid',
+                        'paid_amount' => $paidAmount,
+                        'paid_at' => isset($sessionDetails['paid_at']) 
+                            ? \Carbon\Carbon::parse($sessionDetails['paid_at'])->setTimezone(config('app.timezone'))
+                            : now(),
+                        'payload' => $sessionDetails,
+                    ]);
+                } elseif ($paymentStatus === 'canceled') {
+                    $donation->update(['status' => 'canceled']);
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to confirm payment status in bridge', [
+                    'donation_id' => $donationId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        // origin الآن يحتوي على URL كامل للواجهة الأمامية
+        // تمرير تفاصيل التبرع للواجهة الأمامية
+        $queryParams = [
+            'donation_id' => $donationId,
+            'amount' => $donation->amount,
+            'donor_name' => $donation->donor_name,
+            'status' => $donation->status,
+            'paid_amount' => $donation->paid_amount ?? $donation->amount,
+        ];
+        
+        $redirectUrl = $origin . '?' . http_build_query($queryParams);
+        
+        \Log::info('Bridge Success redirecting', [
+            'redirect_url' => $redirectUrl,
+            'donation_id' => $donationId,
+            'amount' => $donation->amount,
+            'paid_amount' => $donation->paid_amount ?? $donation->amount,
+            'origin' => $origin
+        ]);
+        
+        return redirect()->away($redirectUrl);
+    }
+
+    /**
+     * Bridge endpoint for canceled payment redirects
+     */
+    public function bridgeCancel(Request $request)
+    {
+        $donationId = $request->query('donation_id');
+        $origin = $request->query('origin', 'http://localhost:49887/payment/cancel'); // fallback
+        
+        \Log::info('Bridge Cancel called', [
+            'donation_id' => $donationId,
+            'origin' => $origin,
+            'all_params' => $request->query()
+        ]);
+        
+        // البحث عن التبرع لتمرير تفاصيله
+        $donation = null;
+        if ($donationId) {
+            $donation = Donation::where('donation_id', $donationId)->first();
+        }
+        
+        // origin الآن يحتوي على URL كامل للواجهة الأمامية
+        // تمرير تفاصيل التبرع للواجهة الأمامية
+        $queryParams = [
+            'donation_id' => $donationId,
+            'status' => 'canceled',
+        ];
+        
+        if ($donation) {
+            $queryParams['amount'] = $donation->amount;
+            $queryParams['donor_name'] = $donation->donor_name;
+        }
+        
+        $redirectUrl = $origin . '?' . http_build_query($queryParams);
+        
+        \Log::info('Bridge Cancel redirecting', [
+            'redirect_url' => $redirectUrl,
+            'donation_id' => $donationId,
+            'amount' => $donation?->amount,
+            'origin' => $origin
+        ]);
+        
+        return redirect()->away($redirectUrl);
     }
 }

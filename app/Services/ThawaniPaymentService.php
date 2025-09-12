@@ -22,9 +22,9 @@ class ThawaniPaymentService
      * ملاحظة: ترتيب الوسائط هنا كان مختلف عندك سابقًا
      * سنقبل الترتيب القديم ونحوّله للترتيب المعتمد في ThawaniService:
      *  - قديم: (array $products, string $clientReferenceId, string $successUrl, string $cancelUrl)
-     *  - جديد: (object $donation, array $products, string $successUrl, string $cancelUrl)
+     *  - جديد: (object $donation, array $products, ?string $returnOrigin)
      */
-    public function createSession($donationOrProducts, $clientReferenceIdOrProducts = null, $successUrl = null, $cancelUrl = null): array
+    public function createSession($donationOrProducts, $clientReferenceIdOrProducts = null, $successUrl = null, $cancelUrl = null, $returnOrigin = null): array
     {
         try {
             // إذا كان المعامل الأول array، فهذا يعني الاستخدام القديم
@@ -39,13 +39,13 @@ class ThawaniPaymentService
                     'id' => null
                 ];
                 
-                $res = $this->core->createSession($tempDonation, $products, $successUrl, $cancelUrl);
+                $res = $this->core->createSession($tempDonation, $products, $returnOrigin);
             } else {
-                // الاستخدام الجديد: (object $donation, array $products, string $successUrl, string $cancelUrl)
+                // الاستخدام الجديد: (object $donation, array $products, ?string $returnOrigin)
                 $donation = $donationOrProducts;
                 $products = $clientReferenceIdOrProducts;
                 
-                $res = $this->core->createSession($donation, $products, $successUrl, $cancelUrl);
+                $res = $this->core->createSession($donation, $products, $returnOrigin);
             }
 
             // توحيد أسماء الحقول كما كان يرجعها هذا السيرفس سابقًا
