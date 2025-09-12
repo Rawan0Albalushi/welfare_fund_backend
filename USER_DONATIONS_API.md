@@ -13,14 +13,14 @@ GET /api/v1/me/donations
 **المصادقة:** مطلوبة (Bearer Token)
 
 **المعاملات الاختيارية:**
-- `page` (integer): رقم الصفحة (افتراضي: 1)
-- `per_page` (integer): عدد العناصر في الصفحة (افتراضي: 10)
+- `page` (integer): رقم الصفحة (مهمل - يعرض جميع التبرعات الآن)
+- `per_page` (integer): عدد العناصر في الصفحة (مهمل - يعرض جميع التبرعات الآن)
 - `status` (string): تصفية حسب الحالة - `pending`, `paid`, `failed`, `expired`
 - `type` (string): تصفية حسب النوع - `quick`, `gift`
 
 **مثال على الطلب:**
 ```bash
-curl -X GET "http://localhost:8000/api/v1/me/donations?status=paid&per_page=20" \
+curl -X GET "http://localhost:8000/api/v1/me/donations?status=paid" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Accept: application/json"
 ```

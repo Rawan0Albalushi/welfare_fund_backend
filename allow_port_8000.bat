@@ -15,10 +15,10 @@ if %errorlevel% equ 0 (
     echo ✅ تم إضافة rule بنجاح!
     echo.
     echo الآن يمكن للهاتف الوصول إلى:
-    echo http://192.168.100.130:8000
+    echo http://192.168.1.21:8000
     echo.
     echo للـ API:
-    echo http://192.168.100.130:8000/api/v1/categories
+    echo http://192.168.1.21:8000/api/v1/categories
     echo.
 ) else (
     echo.

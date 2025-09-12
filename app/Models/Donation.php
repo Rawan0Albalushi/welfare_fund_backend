@@ -28,6 +28,9 @@ class Donation extends Model
         'note',
         'expires_at',
         'paid_at',
+        'payment_session_id',
+        'payment_url',
+        'paid_amount',
     ];
 
     /**
@@ -37,6 +40,7 @@ class Donation extends Model
      */
     protected $casts = [
         'amount' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
         'payload' => 'array',
         'expires_at' => 'datetime',
         'paid_at' => 'datetime',

@@ -8,6 +8,7 @@ use App\Http\Controllers\Public\CampaignController;
 use App\Http\Controllers\Public\DonationController;
 use App\Http\Controllers\Donations\DonationController as LegacyDonationController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Me\DonationsController;
 
@@ -52,22 +53,31 @@ Route::prefix('v1')->group(function () {
     Route::get('/campaigns/featured', [CampaignController::class, 'featured']);
     Route::get('/campaigns/{id}', [CampaignController::class, 'show']);
 
-    // Public donation endpoints
-    Route::post('/donations/with-payment', [DonationController::class, 'storeWithPayment'])->middleware('auth:sanctum');
-    Route::post('/donations', [DonationController::class, 'store'])->middleware('auth:sanctum');
+    // Public donation endpoints (allow anonymous donations)
+    Route::post('/donations/with-payment', [DonationController::class, 'storeWithPayment']); // للتبرعات مع دفع (مسجل أو مجهول)
+    Route::post('/donations/anonymous', [DonationController::class, 'store']); // للتبرعات المجهولة
+    Route::post('/donations/anonymous-with-payment', [DonationController::class, 'storeWithPaymentAnonymous']); // للتبرعات المجهولة مع دفع
     Route::get('/donations/{id}', [DonationController::class, 'show'])->middleware('auth:sanctum');
     Route::get('/donations/quick-amounts', [DonationController::class, 'quickAmounts']);
     Route::get('/programs/{id}/donations', [DonationController::class, 'programDonations']);
     
-    // Legacy donation endpoints (with user linking)
-    Route::post('/donations', [LegacyDonationController::class, 'store'])->middleware('auth:sanctum');
-    Route::post('/donations/gift', [LegacyDonationController::class, 'gift'])->middleware('auth:sanctum');
+    // Authenticated donation endpoints (with user linking)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/donations', [LegacyDonationController::class, 'store']); // للمستخدمين المسجلين
+        Route::post('/donations/gift', [LegacyDonationController::class, 'gift']);
+    });
+    
+    // Legacy endpoints (no auth required)
     Route::get('/donations/{id}/status', [LegacyDonationController::class, 'status']);
     Route::get('/payments/callback', [LegacyDonationController::class, 'callback']);
     Route::post('/payments/webhook', [LegacyDonationController::class, 'webhook']);
 
-    // Payment endpoints (Thawani)
-    Route::post('/payments/create', [PaymentController::class, 'createPayment']);
+    // Payment endpoints (Thawani) - New structured endpoints
+    Route::post('/payments/create', [PaymentsController::class, 'create']);
+    Route::post('/payments/confirm', [PaymentsController::class, 'confirm']);
+
+    // Legacy payment endpoints (for backward compatibility)
+    Route::post('/payments/create-legacy', [PaymentController::class, 'createPayment']);
     Route::get('/payments/status/{sessionId}', [PaymentController::class, 'getPaymentStatus']);
     Route::get('/payments', [PaymentController::class, 'index']); // ?session_id=...
 

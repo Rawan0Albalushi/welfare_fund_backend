@@ -25,14 +25,14 @@ class DonationsController extends Controller
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
-     *         description="Page number",
+     *         description="Page number (deprecated - now returns all donations)",
      *         required=false,
      *         @OA\Schema(type="integer", default=1)
      *     ),
      *     @OA\Parameter(
      *         name="per_page",
      *         in="query",
-     *         description="Items per page",
+     *         description="Items per page (deprecated - now returns all donations)",
      *         required=false,
      *         @OA\Schema(type="integer", default=10)
      *     ),
@@ -57,10 +57,8 @@ class DonationsController extends Controller
      *             @OA\Property(property="message", type="string", example="Donations retrieved successfully"),
      *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/DonationResource")),
      *             @OA\Property(property="meta", type="object",
-     *                 @OA\Property(property="current_page", type="integer"),
-     *                 @OA\Property(property="per_page", type="integer"),
      *                 @OA\Property(property="total", type="integer"),
-     *                 @OA\Property(property="last_page", type="integer")
+     *                 @OA\Property(property="showing_all", type="boolean", example=true)
      *             )
      *         )
      *     ),
@@ -100,9 +98,9 @@ class DonationsController extends Controller
             $query->where('type', $request->type);
         }
 
-        // ترتيب النتائج
+        // ترتيب النتائج - عرض جميع التبرعات
         $donations = $query->orderBy('created_at', 'desc')
-            ->paginate($request->get('per_page', 10));
+            ->get();
 
         // إضافة إحصائيات (جميع التبرعات المرتبطة بالمستخدم)
         $userDonationsQuery = Donation::where(function ($q) use ($user) {
@@ -129,10 +127,8 @@ class DonationsController extends Controller
             'data' => DonationResource::collection($donations),
             'stats' => $stats,
             'meta' => [
-                'current_page' => $donations->currentPage(),
-                'per_page' => $donations->perPage(),
-                'total' => $donations->total(),
-                'last_page' => $donations->lastPage(),
+                'total' => $donations->count(),
+                'showing_all' => true,
             ],
         ]);
     }

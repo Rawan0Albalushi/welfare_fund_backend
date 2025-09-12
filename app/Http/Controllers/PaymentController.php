@@ -151,25 +151,15 @@ class PaymentController extends Controller
 
             // إنشاء جلسة الدفع على ثواني
             $result = $this->thawaniService->createSession(
-                (string) $donation->donation_id, // client_reference_id
+                $donation, // تمرير كائن التبرع بدلاً من donation_id
                 $request->products,
                 $successUrl,
                 $cancelUrl
             );
 
-            // نتوقع session_id + redirect_url (أحيانًا payment_url/checkout_url)
-            $sessionId   = $result['session_id']   ?? ($result['data']['session_id'] ?? null);
-            $redirectUrl = $result['redirect_url'] ?? ($result['payment_url'] ?? ($result['data']['redirect_url'] ?? null));
-
-            if (!$sessionId || !$redirectUrl) {
-                throw new \Exception('Invalid response from Thawani: missing session_id or redirect_url');
-            }
-
-            // تحديث معلومات الدفع في التبرع
-            $donation->update([
-                'payment_session_id' => $sessionId,
-                'payment_url'        => $redirectUrl,
-            ]);
+            // استخراج البيانات من النتيجة
+            $sessionId   = $result['session_id'];
+            $redirectUrl = $result['payment_url'];
 
             DB::commit();
 

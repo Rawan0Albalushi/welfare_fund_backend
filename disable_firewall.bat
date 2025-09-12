@@ -15,10 +15,10 @@ if %errorlevel% equ 0 (
     echo ✅ تم إيقاف Windows Firewall بنجاح!
     echo.
     echo الآن جرب الوصول من الهاتف:
-    echo http://192.168.100.130:3000
+    echo http://192.168.1.21:3000
     echo.
     echo للـ API:
-    echo http://192.168.100.130:3000/api/v1/categories
+    echo http://192.168.1.21:3000/api/v1/categories
     echo.
     echo ⚠️ تذكر إعادة تشغيل الـ firewall لاحقاً
     echo.

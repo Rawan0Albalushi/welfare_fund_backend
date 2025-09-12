@@ -22,12 +22,31 @@ class ThawaniPaymentService
      * ملاحظة: ترتيب الوسائط هنا كان مختلف عندك سابقًا
      * سنقبل الترتيب القديم ونحوّله للترتيب المعتمد في ThawaniService:
      *  - قديم: (array $products, string $clientReferenceId, string $successUrl, string $cancelUrl)
-     *  - جديد: (string $clientReferenceId, array $products, string $successUrl, string $cancelUrl)
+     *  - جديد: (object $donation, array $products, string $successUrl, string $cancelUrl)
      */
-    public function createSession(array $products, string $clientReferenceId, string $successUrl, string $cancelUrl): array
+    public function createSession($donationOrProducts, $clientReferenceIdOrProducts = null, $successUrl = null, $cancelUrl = null): array
     {
         try {
-            $res = $this->core->createSession($clientReferenceId, $products, $successUrl, $cancelUrl);
+            // إذا كان المعامل الأول array، فهذا يعني الاستخدام القديم
+            if (is_array($donationOrProducts)) {
+                // الاستخدام القديم: (array $products, string $clientReferenceId, string $successUrl, string $cancelUrl)
+                $products = $donationOrProducts;
+                $clientReferenceId = $clientReferenceIdOrProducts;
+                
+                // إنشاء donation مؤقت للتوافق مع التوقيع الجديد
+                $tempDonation = (object) [
+                    'donation_id' => $clientReferenceId,
+                    'id' => null
+                ];
+                
+                $res = $this->core->createSession($tempDonation, $products, $successUrl, $cancelUrl);
+            } else {
+                // الاستخدام الجديد: (object $donation, array $products, string $successUrl, string $cancelUrl)
+                $donation = $donationOrProducts;
+                $products = $clientReferenceIdOrProducts;
+                
+                $res = $this->core->createSession($donation, $products, $successUrl, $cancelUrl);
+            }
 
             // توحيد أسماء الحقول كما كان يرجعها هذا السيرفس سابقًا
             return [

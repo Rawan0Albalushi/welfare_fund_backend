@@ -107,7 +107,7 @@ class DonationController extends Controller
             'note' => $request->note,
             'type' => $request->type ?? 'quick',
             'status' => 'pending',
-            'user_id' => $request->user()->id, // ربط التبرع بالمستخدم (مطلوب الآن بسبب middleware)
+            'user_id' => $request->user()?->id, // ربط التبرع بالمستخدم (اختياري للتبرعات المجهولة)
             'expires_at' => now()->addDays(7), // التبرع صالح لمدة أسبوع
         ]);
 
@@ -167,6 +167,8 @@ class DonationController extends Controller
      */
     public function storeWithPayment(Request $request): JsonResponse
     {
+        // المستخدم اختياري - يمكن أن يكون مسجل دخول أو مجهول
+        $user = $request->user();
         $validator = Validator::make($request->all(), [
             'program_id' => 'nullable|integer|exists:programs,id',
             'campaign_id' => 'nullable|integer|exists:campaigns,id',
@@ -220,7 +222,7 @@ class DonationController extends Controller
             'note' => $request->note,
             'type' => $request->type ?? 'quick',
             'status' => 'pending',
-            'user_id' => $request->user()->id, // ربط التبرع بالمستخدم (مطلوب الآن بسبب middleware)
+            'user_id' => $user?->id, // ربط التبرع بالمستخدم إذا كان مسجل دخول
             'expires_at' => now()->addDays(7), // التبرع صالح لمدة أسبوع
         ]);
 
@@ -246,8 +248,8 @@ class DonationController extends Controller
             ];
 
             $paymentSession = $thawaniService->createSession(
+                $donation, // تمرير كائن التبرع
                 $products,
-                $donation->donation_id, // Use donation ID as client reference
                 $successUrl,
                 $cancelUrl
             );
@@ -448,5 +450,117 @@ class DonationController extends Controller
             'message' => 'Quick amounts retrieved successfully',
             'data' => $quickAmounts,
         ]);
+    }
+
+    /**
+     * Create anonymous donation with payment session (no authentication required)
+     */
+    public function storeWithPaymentAnonymous(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'program_id' => 'nullable|integer|exists:programs,id',
+            'campaign_id' => 'nullable|integer|exists:campaigns,id',
+            'amount' => 'required|numeric|min:1',
+            'donor_name' => 'required|string|max:255',
+            'note' => 'nullable|string|max:1000',
+            'type' => 'nullable|string|in:quick,gift',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // التحقق من أن إما program_id أو campaign_id موجود
+        if (!$request->has('program_id') && !$request->has('campaign_id')) {
+            return response()->json([
+                'message' => 'Either program_id or campaign_id is required',
+            ], 422);
+        }
+
+        // التحقق من أن البرنامج أو الحملة نشطة
+        if ($request->has('program_id')) {
+            $program = Program::active()->find($request->program_id);
+            if (!$program) {
+                return response()->json([
+                    'message' => 'Program not found or not active',
+                ], 404);
+            }
+        }
+
+        if ($request->has('campaign_id')) {
+            $campaign = Campaign::active()->find($request->campaign_id);
+            if (!$campaign) {
+                return response()->json([
+                    'message' => 'Campaign not found or not active',
+                ], 404);
+            }
+        }
+
+        // إنشاء التبرع (بدون user_id)
+        $donation = Donation::create([
+            'program_id' => $request->program_id,
+            'campaign_id' => $request->campaign_id,
+            'amount' => $request->amount,
+            'donor_name' => $request->donor_name,
+            'note' => $request->note,
+            'type' => $request->type ?? 'quick',
+            'status' => 'pending',
+            'user_id' => null, // تبرع مجهول
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        // تحديث المبلغ المجمع في الحملة
+        if ($request->has('campaign_id')) {
+            $campaign->increment('raised_amount', $request->amount);
+        }
+
+        // Provide default URLs if not provided
+        $successUrl = $request->success_url ?? 'https://studentwelfarefund.com/payment/success';
+        $cancelUrl = $request->cancel_url ?? 'https://studentwelfarefund.com/payment/cancel';
+
+        // إنشاء جلسة الدفع
+        try {
+            $thawaniService = app(\App\Services\ThawaniPaymentService::class);
+            
+            $result = $thawaniService->createSession(
+                $donation, // تمرير كائن التبرع
+                [
+                    [
+                        'name' => $request->donor_name,
+                        'quantity' => 1,
+                        'unit_amount' => $request->amount * 1000, // تحويل إلى بيسة
+                    ]
+                ],
+                $successUrl,
+                $cancelUrl
+            );
+
+            $sessionId = $result['session_id'];
+            $redirectUrl = $result['payment_url'];
+
+            return response()->json([
+                'message' => 'Anonymous donation and payment session created successfully',
+                'data' => [
+                    'donation' => new DonationResource($donation),
+                    'payment_session' => [
+                        'session_id' => $sessionId,
+                        'payment_url' => $redirectUrl,
+                    ],
+                ],
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Donation created but payment session failed',
+                'data' => [
+                    'donation' => new DonationResource($donation),
+                    'payment_session' => null,
+                    'error' => $e->getMessage(),
+                ],
+            ], 201);
+        }
     }
 }

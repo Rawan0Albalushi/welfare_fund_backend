@@ -1,7 +1,7 @@
 <?php
 
 // اختبار API برامج الدعم
-$url = 'http://localhost:8000/api/v1/programs/support';
+$url = 'http://192.168.1.21:8000/api/v1/programs/support';
 
 echo "=== اختبار API برامج الدعم ===\n";
 echo "URL: $url\n\n";

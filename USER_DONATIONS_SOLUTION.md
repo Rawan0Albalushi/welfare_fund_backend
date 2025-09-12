@@ -110,7 +110,7 @@ Authorization: Bearer YOUR_TOKEN
 
 ```dart
 class DonationsService {
-  static const String baseUrl = 'http://localhost:8000/api/v1';
+  static const String baseUrl = 'http://192.168.1.21:8000/api/v1';
   
   Future<Map<String, dynamic>> getUserDonations() async {
     final token = await getAuthToken();

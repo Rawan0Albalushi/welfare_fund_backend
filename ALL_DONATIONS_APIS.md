@@ -15,14 +15,14 @@ GET /api/v1/me/donations
 **المصادقة:** مطلوبة (Bearer Token)
 
 **المعاملات:**
-- `page` (integer): رقم الصفحة (افتراضي: 1)
-- `per_page` (integer): عدد العناصر في الصفحة (افتراضي: 10)
+- `page` (integer): رقم الصفحة (مهمل - يعرض جميع التبرعات الآن)
+- `per_page` (integer): عدد العناصر في الصفحة (مهمل - يعرض جميع التبرعات الآن)
 - `status` (string): تصفية حسب الحالة - `pending`, `paid`, `failed`, `expired`
 - `type` (string): تصفية حسب النوع - `quick`, `gift`
 
 **مثال:**
 ```bash
-GET /api/v1/me/donations?status=paid&per_page=20
+GET /api/v1/me/donations?status=paid
 Authorization: Bearer YOUR_TOKEN
 ```
 
@@ -48,10 +48,8 @@ Authorization: Bearer YOUR_TOKEN
     }
   ],
   "meta": {
-    "current_page": 1,
-    "per_page": 10,
     "total": 1,
-    "last_page": 1
+    "showing_all": true
   }
 }
 ```
@@ -123,10 +121,8 @@ GET /api/v1/programs/26/donations?per_page=20
     }
   ],
   "meta": {
-    "current_page": 1,
-    "per_page": 10,
     "total": 1,
-    "last_page": 1
+    "showing_all": true
   }
 }
 ```
@@ -230,10 +226,8 @@ Authorization: Bearer ADMIN_TOKEN
     }
   ],
   "meta": {
-    "current_page": 1,
-    "per_page": 10,
     "total": 1,
-    "last_page": 1
+    "showing_all": true
   }
 }
 ```

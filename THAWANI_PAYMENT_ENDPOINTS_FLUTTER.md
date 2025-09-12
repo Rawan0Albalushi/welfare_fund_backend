@@ -145,7 +145,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class PaymentService {
-  static const String baseUrl = 'http://localhost:8000/api/v1';
+  static const String baseUrl = 'http://192.168.1.21:8000/api/v1';
   
   static Future<Map<String, dynamic>> createDonationWithPayment({
     required int campaignId,

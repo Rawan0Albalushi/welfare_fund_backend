@@ -26,18 +26,18 @@ class ThawaniService
     /**
      * إنشاء جلسة دفع
      *
-     * @param string $clientReferenceId  معرف مرجعي فريد (مثلاً donation_id)
+     * @param object $donation           كائن التبرع
      * @param array  $products           [ ['name','quantity','unit_amount(بيسة)'], ... ]
      * @param string $successUrl         رابط نجاح (https - عام)
      * @param string $cancelUrl          رابط إلغاء (https - عام)
      * @return array ['session_id','payment_url','raw']
      * @throws Exception
      */
-    public function createSession(string $clientReferenceId, array $products, string $successUrl, string $cancelUrl): array
+    public function createSession($donation, array $products, string $successUrl, string $cancelUrl): array
     {
         try {
             $payload = [
-                'client_reference_id' => $clientReferenceId,
+                'client_reference_id' => $donation->donation_id,
                 'mode'                => 'payment',
                 'products'            => array_map(function ($p) {
                     return [
@@ -48,6 +48,9 @@ class ThawaniService
                 }, $products),
                 'success_url' => $successUrl,
                 'cancel_url'  => $cancelUrl,
+                'metadata'    => [
+                    'donation_db_id' => $donation->id
+                ],
             ];
 
             Log::info('Thawani createSession request', ['payload' => $payload]);
@@ -81,6 +84,14 @@ class ThawaniService
                 throw new Exception('THAWANI_PUBLISHABLE_KEY is not configured');
             }
             $paymentUrl = "{$paymentBase}/pay/{$sessionId}?key={$this->publishableKey}";
+
+            // تحديث معلومات الدفع في التبرع فوراً
+            $donation->update([
+                'payment_session_id' => $sessionId,
+                'payment_url'        => $paymentUrl,
+                'status'             => 'pending',
+                'expires_at'         => $data['expires_at'] ?? now()->addDays(7),
+            ]);
 
             return [
                 'session_id'   => $sessionId,
@@ -136,6 +147,85 @@ class ThawaniService
                 'session_id' => $sessionId,
             ]);
             throw new Exception('Failed to get session details: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * تأكيد الدفع وتحديث حالة التبرع
+     *
+     * @param string $sessionId
+     * @return array ['status', 'donation_id', 'paid_amount', 'paid_at']
+     * @throws Exception
+     */
+    public function confirmPayment(string $sessionId): array
+    {
+        try {
+            $sessionDetails = $this->getSessionDetails($sessionId);
+            $paymentStatus = $sessionDetails['payment_status'] ?? null;
+            
+            if (!$paymentStatus) {
+                throw new Exception('Payment status not found in session details');
+            }
+
+            // البحث عن التبرع باستخدام session_id
+            $donation = \App\Models\Donation::where('payment_session_id', $sessionId)->first();
+            
+            if (!$donation) {
+                throw new Exception('Donation not found for session: ' . $sessionId);
+            }
+
+            // إذا كان التبرع مدفوعاً بالفعل، لا نكرر التحديث (idempotent)
+            if ($donation->status === 'paid') {
+                return [
+                    'status' => 'paid',
+                    'donation_id' => $donation->donation_id,
+                    'paid_amount' => $donation->paid_amount,
+                    'paid_at' => $donation->paid_at,
+                ];
+            }
+
+            $updateData = [
+                'payload' => $sessionDetails,
+            ];
+
+            if ($paymentStatus === 'paid') {
+                // تحويل المبلغ من بيسة إلى ريال عماني
+                $capturedAmount = $sessionDetails['captured_amount'] ?? $sessionDetails['total_amount'] ?? 0;
+                $paidAmount = $capturedAmount / 1000; // بيسة -> ريال
+                
+                $updateData = array_merge($updateData, [
+                    'status' => 'paid',
+                    'paid_amount' => $paidAmount,
+                    'paid_at' => isset($sessionDetails['paid_at']) 
+                        ? \Carbon\Carbon::parse($sessionDetails['paid_at'])->setTimezone(config('app.timezone'))
+                        : now(),
+                ]);
+            } else {
+                // تحديث الحالة حسب حالة الدفع
+                $statusMap = [
+                    'canceled' => 'canceled',
+                    'expired' => 'expired',
+                    'failed' => 'failed',
+                ];
+                
+                $updateData['status'] = $statusMap[$paymentStatus] ?? 'failed';
+            }
+
+            $donation->update($updateData);
+
+            return [
+                'status' => $updateData['status'],
+                'donation_id' => $donation->donation_id,
+                'paid_amount' => $updateData['paid_amount'] ?? null,
+                'paid_at' => $updateData['paid_at'] ?? null,
+            ];
+
+        } catch (Exception $e) {
+            Log::error('Thawani confirmPayment error', [
+                'error' => $e->getMessage(),
+                'session_id' => $sessionId,
+            ]);
+            throw new Exception('Failed to confirm payment: ' . $e->getMessage());
         }
     }
 
