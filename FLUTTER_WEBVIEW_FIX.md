@@ -103,7 +103,7 @@ class _PaymentWebViewState extends State<PaymentWebView> {
 
 ```dart
 class PaymentService {
-  static const String baseUrl = 'http://192.168.1.21:8000/api';
+  static const String baseUrl = 'http://192.168.100.105:8000/api';
 
   // إنشاء تبرع مع دفع
   static Future<Map<String, dynamic>> createDonationWithPayment({

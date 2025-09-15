@@ -54,7 +54,7 @@ Route::post('/donations/anonymous-with-payment', [DonationController::class, 'st
 ### 1. سجل دخول في التطبيق
 ### 2. اعمل تبرع جديد باستخدام:
 ```bash
-POST http://192.168.1.21:8000/api/v1/donations/with-payment
+POST http://192.168.100.105:8000/api/v1/donations/with-payment
 Authorization: Bearer YOUR_TOKEN
 Content-Type: application/json
 
@@ -68,7 +68,7 @@ Content-Type: application/json
 
 ### 3. تحقق من قائمة تبرعاتك:
 ```bash
-GET http://192.168.1.21:8000/api/v1/me/donations
+GET http://192.168.100.105:8000/api/v1/me/donations
 Authorization: Bearer YOUR_TOKEN
 ```
 
@@ -88,7 +88,7 @@ LIMIT 5;
 
 ```dart
 class PaymentService {
-  static const String baseUrl = 'http://192.168.1.21:8000/api/v1';
+  static const String baseUrl = 'http://192.168.100.105:8000/api/v1';
   
   static Future<Map<String, dynamic>> createDonationWithPayment({
     required int campaignId,

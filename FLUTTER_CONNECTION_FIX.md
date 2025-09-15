@@ -101,7 +101,7 @@ Response: 200 OK
 ### Base URL Configuration
 Make sure your Flutter app is configured to use:
 ```dart
-const String baseUrl = 'http://192.168.1.21:8000/api/v1';
+const String baseUrl = 'http://192.168.100.105:8000/api/v1';
 // or for production: 'https://your-domain.com/api/v1'
 ```
 

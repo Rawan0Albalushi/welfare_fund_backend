@@ -35,7 +35,7 @@ php artisan config:clear
 
 ```dart
 class PaymentService {
-  static const String baseUrl = 'http://192.168.1.21:8000/api';
+  static const String baseUrl = 'http://192.168.100.105:8000/api';
 
   // إنشاء جلسة دفع حقيقية
   static Future<Map<String, dynamic>> createPaymentSession({

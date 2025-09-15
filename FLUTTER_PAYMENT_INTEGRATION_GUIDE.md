@@ -114,7 +114,7 @@ The backend now provides a robust payment integration system with automatic fall
 
 ```dart
 class PaymentService {
-  static const String baseUrl = 'http://192.168.1.21:8000/api';
+  static const String baseUrl = 'http://192.168.100.105:8000/api';
 
   // Create payment session
   static Future<Map<String, dynamic>> createPaymentSession({

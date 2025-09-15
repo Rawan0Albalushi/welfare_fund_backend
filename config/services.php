@@ -39,8 +39,8 @@ return [
         'secret_key' => env('THAWANI_SECRET_KEY'),
         'publishable_key' => env('THAWANI_PUBLISHABLE_KEY'),
         'base_url'   => env('THAWANI_BASE_URL', 'https://uatcheckout.thawani.om/api/v1'),
-        'success_url' => env('THAWANI_SUCCESS_URL', 'http://192.168.1.21:8000/payment/bridge/success'),
-        'cancel_url' => env('THAWANI_CANCEL_URL', 'http://192.168.1.21:8000/payment/bridge/cancel'),
+        'success_url' => env('THAWANI_SUCCESS_URL', 'http://192.168.1.101:8000/payment/bridge/success'),
+        'cancel_url' => env('THAWANI_CANCEL_URL', 'http://192.168.1.101:8000/payment/bridge/cancel'),
     ],
 
 ];

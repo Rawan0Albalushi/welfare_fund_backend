@@ -104,7 +104,7 @@ POST /api/v1/donations/anonymous
 
 ```dart
 class DonationsService {
-  static const String baseUrl = 'http://192.168.1.21:8000/api/v1';
+  static const String baseUrl = 'http://192.168.100.105:8000/api/v1';
   
   // للمستخدمين المسجلين
   Future<Map<String, dynamic>> createDonation({

@@ -5,7 +5,7 @@ echo "=== اختبار إصلاح مشكلة التبرعات ===\n\n";
 
 // 1. اختبار إنشاء تبرع مع authentication
 echo "1. اختبار إنشاء تبرع مع authentication:\n";
-echo "POST http://192.168.1.21:8000/api/v1/donations\n";
+echo "POST http://192.168.1.101:8000/api/v1/donations\n";
 echo "Headers: Authorization: Bearer YOUR_TOKEN\n";
 echo "Body: {\n";
 echo "  \"program_id\": 1,\n";
@@ -16,12 +16,12 @@ echo "}\n\n";
 
 // 2. اختبار استرجاع تبرعات المستخدم
 echo "2. اختبار استرجاع تبرعات المستخدم:\n";
-echo "GET http://192.168.1.21:8000/api/v1/me/donations\n";
+echo "GET http://192.168.1.101:8000/api/v1/me/donations\n";
 echo "Headers: Authorization: Bearer YOUR_TOKEN\n\n";
 
 // 3. اختبار إنشاء تبرع مجهول
 echo "3. اختبار إنشاء تبرع مجهول:\n";
-echo "POST http://192.168.1.21:8000/api/v1/donations/anonymous\n";
+echo "POST http://192.168.1.101:8000/api/v1/donations/anonymous\n";
 echo "Body: {\n";
 echo "  \"program_id\": 1,\n";
 echo "  \"amount\": 25,\n";

@@ -17,11 +17,11 @@ This implementation adds a payment bridge system that handles return URLs from T
 
   $success = $origin
       ? "{$origin}/payment/bridge/success?donation_id={$donation->donation_id}"
-      : "http://192.168.1.21:8000/payment/bridge/success?donation_id={$donation->donation_id}";
+      : "http://192.168.100.105:8000/payment/bridge/success?donation_id={$donation->donation_id}";
 
   $cancel = $origin
       ? "{$origin}/payment/bridge/cancel?donation_id={$donation->donation_id}"
-      : "http://192.168.1.21:8000/payment/bridge/cancel?donation_id={$donation->donation_id}";
+      : "http://192.168.100.105:8000/payment/bridge/cancel?donation_id={$donation->donation_id}";
   ```
 - Added comprehensive payload logging:
   ```php
@@ -191,6 +191,6 @@ tail -f storage/logs/laravel.log | grep "THAWANI createSession payload"
 
 - **BREAKING CHANGE**: Existing integrations using `success_url` and `cancel_url` will need to be updated
 - The `return_origin` parameter is now **required** - no default values
-- If `return_origin` is not provided, the system will use IP fallback: `http://192.168.1.21:8000`
+- If `return_origin` is not provided, the system will use IP fallback: `http://192.168.100.105:8000`
 - Bridge endpoints are backward compatible with existing donation IDs
 - All hardcoded values have been removed from the system

@@ -2,7 +2,7 @@
 
 ## المشكلة الأصلية
 ```
-Request URL: http://192.168.1.21:8000/api/v1/v1/programs/support
+Request URL: http://192.168.100.105:8000/api/v1/v1/programs/support
 Request method: GET
 No programs found (404) - Support category not found
 ```
@@ -10,8 +10,8 @@ No programs found (404) - Support category not found
 ## أسباب المشكلة
 
 ### 1. URL خاطئ
-- **الخطأ**: `http://192.168.1.21:8000/api/v1/v1/programs/support`
-- **الصحيح**: `http://192.168.1.21:8000/api/v1/programs/support`
+- **الخطأ**: `http://192.168.100.105:8000/api/v1/v1/programs/support`
+- **الصحيح**: `http://192.168.100.105:8000/api/v1/programs/support`
 - **السبب**: تكرار `v1` في الـ URL
 
 ### 2. كود البحث عن الفئات خاطئ
@@ -59,7 +59,7 @@ $programs = Program::where('category_id', $supportCategory->id)
 
 ### ✅ API يعمل الآن بشكل صحيح
 ```http
-GET http://192.168.1.21:8000/api/v1/programs/support
+GET http://192.168.100.105:8000/api/v1/programs/support
 ```
 
 ### ✅ الاستجابة الصحيحة
@@ -100,10 +100,10 @@ GET http://192.168.1.21:8000/api/v1/programs/support
 ### 1. استخدام الـ URL الصحيح
 ```dart
 // الصحيح
-final url = 'http://192.168.1.21:8000/api/v1/programs/support';
+final url = 'http://192.168.100.105:8000/api/v1/programs/support';
 
 // الخطأ - لا تستخدم
-final wrongUrl = 'http://192.168.1.21:8000/api/v1/v1/programs/support';
+final wrongUrl = 'http://192.168.100.105:8000/api/v1/v1/programs/support';
 ```
 
 ### 2. معالجة الاستجابة

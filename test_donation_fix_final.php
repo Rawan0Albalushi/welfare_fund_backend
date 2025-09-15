@@ -17,7 +17,7 @@ echo "🧪 اختبار الحل:\n\n";
 
 echo "1. سجل دخول في التطبيق\n";
 echo "2. اعمل تبرع جديد باستخدام:\n";
-echo "   POST http://192.168.1.21:8000/api/v1/donations/with-payment\n";
+echo "   POST http://192.168.1.101:8000/api/v1/donations/with-payment\n";
 echo "   Headers: Authorization: Bearer YOUR_TOKEN\n";
 echo "   Body: {\n";
 echo "     \"campaign_id\": 1,\n";
@@ -27,7 +27,7 @@ echo "     \"note\": \"تبرع تجريبي\"\n";
 echo "   }\n\n";
 
 echo "3. تحقق من قائمة تبرعاتك:\n";
-echo "   GET http://192.168.1.21:8000/api/v1/me/donations\n";
+echo "   GET http://192.168.1.101:8000/api/v1/me/donations\n";
 echo "   Headers: Authorization: Bearer YOUR_TOKEN\n\n";
 
 echo "4. تحقق من قاعدة البيانات:\n";
@@ -39,7 +39,7 @@ echo "تأكد من أن التطبيق يرسل Authorization header:\n\n";
 
 echo "```dart\n";
 echo "final response = await http.post(\n";
-echo "  Uri.parse('http://192.168.1.21:8000/api/v1/donations/with-payment'),\n";
+echo "  Uri.parse('http://192.168.1.101:8000/api/v1/donations/with-payment'),\n";
 echo "  headers: {\n";
 echo "    'Authorization': 'Bearer \$token', // ✅ مهم!\n";
 echo "    'Content-Type': 'application/json',\n";

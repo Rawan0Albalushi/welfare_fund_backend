@@ -17,12 +17,12 @@ echo "1️⃣ Testing URL construction logic...\n";
 $origin = rtrim($testOrigin, '/');
 
 $success = $origin
-    ? "http://192.168.1.21:8000/payment/bridge/success?donation_id={$testDonationId}&origin=" . urlencode($origin)
-    : "http://192.168.1.21:8000/payment/bridge/success?donation_id={$testDonationId}";
+    ? "http://192.168.1.101:8000/payment/bridge/success?donation_id={$testDonationId}&origin=" . urlencode($origin)
+    : "http://192.168.1.101:8000/payment/bridge/success?donation_id={$testDonationId}";
 
 $cancel = $origin
-    ? "http://192.168.1.21:8000/payment/bridge/cancel?donation_id={$testDonationId}&origin=" . urlencode($origin)
-    : "http://192.168.1.21:8000/payment/bridge/cancel?donation_id={$testDonationId}";
+    ? "http://192.168.1.101:8000/payment/bridge/cancel?donation_id={$testDonationId}&origin=" . urlencode($origin)
+    : "http://192.168.1.101:8000/payment/bridge/cancel?donation_id={$testDonationId}";
 
 echo "✅ Success URL: $success\n";
 echo "✅ Cancel URL: $cancel\n\n";
@@ -30,8 +30,8 @@ echo "✅ Cancel URL: $cancel\n\n";
 // Test URL parsing
 echo "2️⃣ Testing URL parsing...\n";
 
-$successUrl = "http://192.168.1.21:8000/payment/bridge/success?donation_id=DN_test-12345&origin=http%3A//localhost%3A49887";
-$cancelUrl = "http://192.168.1.21:8000/payment/bridge/cancel?donation_id=DN_test-12345&origin=http%3A//localhost%3A49887";
+$successUrl = "http://192.168.1.101:8000/payment/bridge/success?donation_id=DN_test-12345&origin=http%3A//localhost%3A49887";
+$cancelUrl = "http://192.168.1.101:8000/payment/bridge/cancel?donation_id=DN_test-12345&origin=http%3A//localhost%3A49887";
 
 $successParts = parse_url($successUrl);
 $cancelParts = parse_url($cancelUrl);
@@ -60,7 +60,7 @@ echo "✅ Redirect URL: $redirectUrl\n\n";
 // Test with missing origin
 echo "4️⃣ Testing with missing origin...\n";
 
-$successUrlNoOrigin = "http://192.168.1.21:8000/payment/bridge/success?donation_id=DN_test-12345";
+$successUrlNoOrigin = "http://192.168.1.101:8000/payment/bridge/success?donation_id=DN_test-12345";
 $parts = parse_url($successUrlNoOrigin);
 parse_str($parts['query'], $query);
 

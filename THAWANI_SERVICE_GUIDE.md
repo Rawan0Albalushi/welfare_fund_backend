@@ -308,7 +308,7 @@ import 'dart:convert';
 
 Future<Map<String, dynamic>> createPayment(double amount) async {
   final response = await http.post(
-    Uri.parse('http://192.168.1.21:8000/api/v1/payments/create'),
+    Uri.parse('http://192.168.100.105:8000/api/v1/payments/create'),
     headers: {'Content-Type': 'application/json'},
     body: jsonEncode({
       'amount': amount,
@@ -330,7 +330,7 @@ Future<Map<String, dynamic>> createPayment(double amount) async {
 
 Future<Map<String, dynamic>> getPaymentStatus(String sessionId) async {
   final response = await http.get(
-    Uri.parse('http://192.168.1.21:8000/api/v1/payments/status/$sessionId'),
+    Uri.parse('http://192.168.100.105:8000/api/v1/payments/status/$sessionId'),
   );
 
   if (response.statusCode == 200) {

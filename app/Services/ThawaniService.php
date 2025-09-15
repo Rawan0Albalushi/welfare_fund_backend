@@ -47,8 +47,8 @@ class ThawaniService
                 'http://localhost:49887/payment/cancel';
 
             // بناء روابط النجاح والإلغاء مع تمرير origin في query parameters
-            $success = "http://192.168.1.21:8000/payment/bridge/success?donation_id={$donation->donation_id}&origin=" . urlencode($successUrl);
-            $cancel = "http://192.168.1.21:8000/payment/bridge/cancel?donation_id={$donation->donation_id}&origin=" . urlencode($cancelUrl);
+            $success = "http://192.168.1.101:8000/payment/bridge/success?donation_id={$donation->donation_id}&origin=" . urlencode($successUrl);
+            $cancel = "http://192.168.1.101:8000/payment/bridge/cancel?donation_id={$donation->donation_id}&origin=" . urlencode($cancelUrl);
 
             \Log::info('THAWANI createSession payload', [
                 'success_url' => $success,

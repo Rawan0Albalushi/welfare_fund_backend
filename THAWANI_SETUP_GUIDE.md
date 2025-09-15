@@ -97,7 +97,7 @@ php artisan cache:clear
 ```dart
 // Test payment creation
 final response = await http.post(
-  Uri.parse('http://192.168.1.21:8000/api/v1/payments/create'),
+  Uri.parse('http://192.168.100.105:8000/api/v1/payments/create'),
   headers: {'Content-Type': 'application/json'},
   body: jsonEncode({
     'amount': 10.0,
@@ -115,7 +115,7 @@ print('Body: ${response.body}');
 ```dart
 // Test payment status
 final statusResponse = await http.get(
-  Uri.parse('http://192.168.1.21:8000/api/v1/payments/status/$sessionId'),
+  Uri.parse('http://192.168.100.105:8000/api/v1/payments/status/$sessionId'),
 );
 
 print('Status: ${statusResponse.statusCode}');

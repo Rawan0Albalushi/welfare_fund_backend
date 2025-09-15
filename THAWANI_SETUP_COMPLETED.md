@@ -96,7 +96,7 @@ php artisan config:show services.thawani
 ```dart
 // إنشاء جلسة دفع
 final response = await http.post(
-  Uri.parse('http://192.168.1.21:8000/api/v1/payments/create'),
+  Uri.parse('http://192.168.100.105:8000/api/v1/payments/create'),
   headers: {'Content-Type': 'application/json'},
   body: jsonEncode({
     'products': [
@@ -114,7 +114,7 @@ final response = await http.post(
 
 // التحقق من حالة الدفع
 final statusResponse = await http.get(
-  Uri.parse('http://192.168.1.21:8000/api/v1/payments/status/$sessionId'),
+  Uri.parse('http://192.168.100.105:8000/api/v1/payments/status/$sessionId'),
 );
 ```
 

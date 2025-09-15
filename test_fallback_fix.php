@@ -28,8 +28,8 @@ echo "2️⃣ Testing bridge URL construction with fallback...\n";
 
 $testDonationId = 'DN_test-12345';
 
-$success = "http://192.168.1.21:8000/payment/bridge/success?donation_id={$testDonationId}&origin=" . urlencode($successUrl);
-$cancel = "http://192.168.1.21:8000/payment/bridge/cancel?donation_id={$testDonationId}&origin=" . urlencode($cancelUrl);
+$success = "http://192.168.1.101:8000/payment/bridge/success?donation_id={$testDonationId}&origin=" . urlencode($successUrl);
+$cancel = "http://192.168.1.101:8000/payment/bridge/cancel?donation_id={$testDonationId}&origin=" . urlencode($cancelUrl);
 
 echo "✅ Bridge Success URL: $success\n";
 echo "✅ Bridge Cancel URL: $cancel\n\n";
