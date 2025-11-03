@@ -56,11 +56,13 @@ class DonationController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+        
         $validator = Validator::make($request->all(), [
             'program_id' => 'nullable|integer|exists:programs,id',
             'campaign_id' => 'nullable|integer|exists:campaigns,id',
             'amount' => 'required|numeric|min:1',
-            'donor_name' => 'required|string|max:255',
+            'donor_name' => $user ? 'nullable|string|max:255' : 'required|string|max:255',
             'note' => 'nullable|string|max:1000',
             'type' => 'nullable|string|in:quick,gift',
         ]);
@@ -96,25 +98,31 @@ class DonationController extends Controller
                     'message' => 'Campaign not found or not active',
                 ], 404);
             }
+            // امنع التبرع إذا اكتمل المبلغ المستهدف
+            if ($campaign->is_completed || $campaign->raised_amount >= $campaign->goal_amount) {
+                return response()->json([
+                    'message' => 'Campaign has reached its goal and no longer accepts donations',
+                ], 422);
+            }
         }
+
+        // استخدام اسم المستخدم إذا كان مسجل دخول
+        $donorName = $user ? $user->name : $request->donor_name;
 
         // إنشاء التبرع
         $donation = Donation::create([
             'program_id' => $request->program_id,
             'campaign_id' => $request->campaign_id,
             'amount' => $request->amount,
-            'donor_name' => $request->donor_name,
+            'donor_name' => $donorName,
             'note' => $request->note,
             'type' => $request->type ?? 'quick',
             'status' => 'pending',
-            'user_id' => $request->user()?->id, // ربط التبرع بالمستخدم (اختياري للتبرعات المجهولة)
+            'user_id' => $user?->id, // ربط التبرع بالمستخدم (اختياري للتبرعات المجهولة)
             'expires_at' => now()->addDays(7), // التبرع صالح لمدة أسبوع
         ]);
 
-        // تحديث المبلغ المجمع في الحملة فقط (برامج الدعم لا تحتاج لحقول التبرع)
-        if ($request->has('campaign_id')) {
-            $campaign->increment('raised_amount', $request->amount);
-        }
+        // لا نقوم بتحديث raised_amount هنا؛ سيتم التحديث بعد تأكيد الدفع فقط عبر Webhook/فحص حالة الدفع
 
         return response()->json([
             'message' => 'Donation created successfully',
@@ -195,7 +203,7 @@ class DonationController extends Controller
             'program_id' => 'nullable|integer|exists:programs,id',
             'campaign_id' => 'nullable|integer|exists:campaigns,id',
             'amount' => 'required|numeric|min:1',
-            'donor_name' => 'required|string|max:255',
+            'donor_name' => $user ? 'nullable|string|max:255' : 'required|string|max:255',
             'note' => 'nullable|string|max:1000',
             'type' => 'nullable|string|in:quick,gift',
             'success_url' => 'nullable|url',
@@ -233,14 +241,23 @@ class DonationController extends Controller
                     'message' => 'Campaign not found or not active',
                 ], 404);
             }
+            // امنع التبرع إذا اكتمل المبلغ المستهدف
+            if ($campaign->is_completed || $campaign->raised_amount >= $campaign->goal_amount) {
+                return response()->json([
+                    'message' => 'Campaign has reached its goal and no longer accepts donations',
+                ], 422);
+            }
         }
+
+        // استخدام اسم المستخدم إذا كان مسجل دخول
+        $donorName = $user ? $user->name : $request->donor_name;
 
         // إنشاء التبرع
         $donation = Donation::create([
             'program_id' => $request->program_id,
             'campaign_id' => $request->campaign_id,
             'amount' => $request->amount,
-            'donor_name' => $request->donor_name,
+            'donor_name' => $donorName,
             'note' => $request->note,
             'type' => $request->type ?? 'quick',
             'status' => 'pending',
@@ -255,10 +272,7 @@ class DonationController extends Controller
             'amount' => $donation->amount
         ]);
 
-        // تحديث المبلغ المجمع في الحملة فقط (برامج الدعم لا تحتاج لحقول التبرع)
-        if ($request->has('campaign_id')) {
-            $campaign->increment('raised_amount', $request->amount);
-        }
+        // لا نقوم بتحديث raised_amount هنا؛ سيتم التحديث بعد تأكيد الدفع فقط عبر Webhook/فحص حالة الدفع
 
         // استخدام return_origin لإنشاء URLs ديناميكية
         $returnOrigin = $request->input('return_origin');
@@ -546,6 +560,12 @@ class DonationController extends Controller
                     'message' => 'Campaign not found or not active',
                 ], 404);
             }
+            // امنع التبرع إذا اكتمل المبلغ المستهدف
+            if ($campaign->is_completed || $campaign->raised_amount >= $campaign->goal_amount) {
+                return response()->json([
+                    'message' => 'Campaign has reached its goal and no longer accepts donations',
+                ], 422);
+            }
         }
 
         // إنشاء التبرع (بدون user_id)
@@ -561,10 +581,7 @@ class DonationController extends Controller
             'expires_at' => now()->addDays(7),
         ]);
 
-        // تحديث المبلغ المجمع في الحملة
-        if ($request->has('campaign_id')) {
-            $campaign->increment('raised_amount', $request->amount);
-        }
+        // لا نقوم بتحديث raised_amount هنا؛ سيتم التحديث بعد تأكيد الدفع فقط عبر Webhook/فحص حالة الدفع
 
         // Provide default URLs if not provided
         $successUrl = $request->success_url ?? 'https://studentwelfarefund.com/payment/success';

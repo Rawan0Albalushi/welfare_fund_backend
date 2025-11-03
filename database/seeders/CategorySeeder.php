@@ -15,43 +15,28 @@ class CategorySeeder extends Seeder
     {
         $categories = [
             [
-                'name_ar' => 'المساعدات الطارئة',
-                'name_en' => 'Emergency Assistance',
+                'name_ar' => 'فرص التعليم العالي',
+                'name_en' => 'Higher Education Opportunities',
                 'status' => 'active',
             ],
             [
-                'name_ar' => 'الدعم التعليمي',
-                'name_en' => 'Educational Support',
+                'name_ar' => 'السكن والنقل',
+                'name_en' => 'Housing and Transportation',
                 'status' => 'active',
             ],
             [
-                'name_ar' => 'المساعدات الطبية',
-                'name_en' => 'Medical Aid',
+                'name_ar' => 'الإعانة الشهرية',
+                'name_en' => 'Monthly Allowance',
                 'status' => 'active',
             ],
             [
-                'name_ar' => 'دعم السكن',
-                'name_en' => 'Housing Support',
+                'name_ar' => 'رسوم الاختبارات',
+                'name_en' => 'Examination Fees',
                 'status' => 'active',
             ],
             [
-                'name_ar' => 'المواصلات',
-                'name_en' => 'Transportation',
-                'status' => 'active',
-            ],
-            [
-                'name_ar' => 'الوصول للتكنولوجيا',
-                'name_en' => 'Technology Access',
-                'status' => 'active',
-            ],
-            [
-                'name_ar' => 'الأمن الغذائي',
-                'name_en' => 'Food Security',
-                'status' => 'active',
-            ],
-            [
-                'name_ar' => 'دعم الصحة النفسية',
-                'name_en' => 'Mental Health Support',
+                'name_ar' => 'المساعدات العاجلة',
+                'name_en' => 'Urgent Assistance',
                 'status' => 'active',
             ],
         ];

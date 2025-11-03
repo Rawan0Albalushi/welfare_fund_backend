@@ -13,14 +13,11 @@ class SupportProgramsSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get or create the support category
-        $supportCategory = Category::firstOrCreate([
-            'name_ar' => 'برامج الدعم الطلابي'
-        ], [
-            'name_ar' => 'برامج الدعم الطلابي',
-            'name_en' => 'Student Support Programs',
-            'status' => 'active'
-        ]);
+        // Get categories for each program
+        $categoryHigherEducation = Category::where('name_ar', 'فرص التعليم العالي')->first();
+        $categoryHousingTransport = Category::where('name_ar', 'السكن والنقل')->first();
+        $categoryMonthlyAllowance = Category::where('name_ar', 'الإعانة الشهرية')->first();
+        $categoryExamFees = Category::where('name_ar', 'رسوم الاختبارات')->first();
 
         // Define the support programs
         $supportPrograms = [
@@ -30,7 +27,7 @@ class SupportProgramsSeeder extends Seeder
                 'description_ar' => 'برنامج لدعم الطلاب في الحصول على فرص التعليم العالي والمنح الدراسية',
                 'description_en' => 'A program to support students in obtaining higher education opportunities and scholarships',
                 'status' => 'active',
-                'category_id' => $supportCategory->id,
+                'category_id' => $categoryHigherEducation->id,
             ],
             [
                 'title_ar' => 'برنامج السكن والنقل',
@@ -38,23 +35,23 @@ class SupportProgramsSeeder extends Seeder
                 'description_ar' => 'برنامج لدعم الطلاب في تكاليف السكن والنقل الجامعي',
                 'description_en' => 'A program to support students with housing and university transportation costs',
                 'status' => 'active',
-                'category_id' => $supportCategory->id,
+                'category_id' => $categoryHousingTransport->id,
             ],
             [
-                'title_ar' => 'برنامج الاعانة الشهرية',
+                'title_ar' => 'برنامج الإعانة الشهرية',
                 'title_en' => 'Monthly Allowance Program',
                 'description_ar' => 'برنامج لتقديم إعانات شهرية للطلاب المحتاجين',
                 'description_en' => 'A program to provide monthly allowances for students in need',
                 'status' => 'active',
-                'category_id' => $supportCategory->id,
+                'category_id' => $categoryMonthlyAllowance->id,
             ],
             [
-                'title_ar' => 'رسوم الاختبارات',
-                'title_en' => 'Examination Fees',
+                'title_ar' => 'برنامج رسوم الاختبارات',
+                'title_en' => 'Examination Fees Program',
                 'description_ar' => 'برنامج لدعم الطلاب في رسوم الاختبارات والامتحانات',
                 'description_en' => 'A program to support students with examination and test fees',
                 'status' => 'active',
-                'category_id' => $supportCategory->id,
+                'category_id' => $categoryExamFees->id,
             ],
         ];
 

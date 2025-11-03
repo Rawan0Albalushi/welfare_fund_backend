@@ -16,9 +16,9 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             CategorySeeder::class,
-            ProgramSeeder::class,
+            // ProgramSeeder::class,  // Disabled - only using SupportProgramsSeeder
             SupportProgramsSeeder::class,
-            CharityProgramsSeeder::class,
+            // CharityProgramsSeeder::class,  // Disabled - only using SupportProgramsSeeder
             DonationCampaignsSeeder::class,
             AdminUserSeeder::class,
         ]);

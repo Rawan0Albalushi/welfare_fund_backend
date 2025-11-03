@@ -6,6 +6,7 @@ use App\Models\Donation;
 use App\Models\GiftMeta;
 use App\Models\Program;
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
@@ -20,10 +21,19 @@ class DonationsService
         return DB::transaction(function () use ($data, $userId) {
             $program = Program::findOrFail($data['program_id']);
             
+            // استخدام اسم المستخدم إذا كان مسجل دخول
+            $donorName = $data['donor_name'] ?? null;
+            if (!$donorName && $userId) {
+                $user = User::find($userId);
+                $donorName = $user?->name ?? 'Anonymous';
+            } elseif (!$donorName) {
+                $donorName = 'Anonymous';
+            }
+            
             $donation = Donation::create([
                 'program_id' => $data['program_id'],
                 'amount' => $data['amount'],
-                'donor_name' => $data['donor_name'] ?? 'Anonymous',
+                'donor_name' => $donorName,
                 'type' => 'quick',
                 'status' => 'pending',
                 'user_id' => $userId, // يجب أن يكون موجوداً الآن بسبب middleware
@@ -52,10 +62,19 @@ class DonationsService
         return DB::transaction(function () use ($data, $userId) {
             $program = Program::findOrFail($data['program_id']);
             
+            // استخدام اسم المستخدم إذا كان مسجل دخول ولم يتم توفير اسم المرسل
+            $senderName = $data['sender']['name'] ?? null;
+            if (!$senderName && $userId) {
+                $user = User::find($userId);
+                $senderName = $user?->name ?? 'Anonymous';
+            } elseif (!$senderName) {
+                $senderName = 'Anonymous';
+            }
+            
             $donation = Donation::create([
                 'program_id' => $data['program_id'],
                 'amount' => $data['amount'],
-                'donor_name' => $data['sender']['name'] ?? 'Anonymous',
+                'donor_name' => $senderName,
                 'type' => 'gift',
                 'status' => 'pending',
                 'user_id' => $userId, // يجب أن يكون موجوداً الآن بسبب middleware
@@ -68,7 +87,7 @@ class DonationsService
                 'recipient_name' => $data['recipient']['name'],
                 'recipient_phone' => $data['recipient']['phone'],
                 'message' => $data['recipient']['message'] ?? null,
-                'sender_name' => $data['sender']['name'] ?? null,
+                'sender_name' => $senderName,
                 'sender_phone' => $data['sender']['phone'] ?? null,
                 'hide_identity' => $data['sender']['hide_identity'] ?? false,
             ]);
