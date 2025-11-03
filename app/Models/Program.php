@@ -17,8 +17,10 @@ class Program extends Model
      */
     protected $fillable = [
         'category_id',
-        'title',
-        'description',
+        'title_ar',
+        'title_en',
+        'description_ar',
+        'description_en',
         'image',
         'status',
     ];
@@ -68,7 +70,9 @@ class Program extends Model
      */
     public function scopeSearch($query, $search)
     {
-        return $query->where('title', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+        return $query->where('title_ar', 'like', "%{$search}%")
+                    ->orWhere('title_en', 'like', "%{$search}%")
+                    ->orWhere('description_ar', 'like', "%{$search}%")
+                    ->orWhere('description_en', 'like', "%{$search}%");
     }
 }

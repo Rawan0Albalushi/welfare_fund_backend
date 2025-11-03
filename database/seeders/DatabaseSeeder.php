@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             SupportProgramsSeeder::class,
             CharityProgramsSeeder::class,
             DonationCampaignsSeeder::class,
+            AdminUserSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();

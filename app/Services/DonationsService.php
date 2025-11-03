@@ -148,7 +148,7 @@ class DonationsService
      */
     public function getRecentDonations(int $limit = 10): array
     {
-        $donations = Donation::with(['program:id,title', 'campaign:id,title'])
+        $donations = Donation::with(['program:id,title_ar,title_en', 'campaign:id,title_ar,title_en'])
             ->where('status', 'paid')
             ->orderBy('paid_at', 'desc')
             ->limit($limit)

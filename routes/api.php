@@ -11,6 +11,17 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Me\DonationsController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
+use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
+use App\Http\Controllers\Admin\DonationController as AdminDonationController;
+use App\Http\Controllers\Admin\ApplicationController as AdminApplicationController;
+use App\Http\Controllers\Admin\AuthController as AdminAuthController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
+use App\Http\Controllers\Admin\PermissionController as AdminPermissionController;
+use App\Http\Controllers\Admin\ReportController as AdminReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +39,9 @@ Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/auth/me', [AuthController::class, 'me'])->middleware('auth:sanctum');
 Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+// Admin auth (v1 prefix only)
+Route::post('/v1/admin/auth/login', [AdminAuthController::class, 'login']);
 
 // Legacy student registration routes for frontend compatibility
 Route::middleware('auth:sanctum')->prefix('students/registration')->group(function () {
@@ -101,6 +115,82 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->prefix('me')->group(function () {
         Route::get('/donations', [DonationsController::class, 'index']);
         Route::get('/donations/{id}', [DonationsController::class, 'show']);
+    });
+
+    // Admin endpoints (require auth + admin role)
+    Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+        // Admin auth (within v1)
+        Route::post('/auth/logout', [AdminAuthController::class, 'logout']);
+        Route::get('/auth/me', [AdminAuthController::class, 'me']);
+
+        // Dashboard & stats
+        Route::get('/stats', [AdminDashboardController::class, 'stats']);
+        Route::get('/dashboard', [AdminDashboardController::class, 'dashboard']);
+        Route::get('/ping', [AdminDashboardController::class, 'ping']);
+
+        // Reports endpoints
+        Route::prefix('reports')->group(function () {
+            Route::get('/overview', [AdminReportController::class, 'overview']);
+            Route::get('/donations', [AdminReportController::class, 'donations']);
+            Route::get('/donations/export/excel', [AdminReportController::class, 'exportDonationsExcel']);
+            Route::get('/donations/export/pdf', [AdminReportController::class, 'exportDonationsPdf']);
+            Route::get('/financial', [AdminReportController::class, 'financial']);
+            Route::get('/financial/export/excel', [AdminReportController::class, 'exportFinancialExcel']);
+            Route::get('/financial/export/pdf', [AdminReportController::class, 'exportFinancialPdf']);
+            Route::get('/programs', [AdminReportController::class, 'programs']);
+            Route::get('/programs/export/excel', [AdminReportController::class, 'exportProgramsExcel']);
+            Route::get('/campaigns', [AdminReportController::class, 'campaigns']);
+            Route::get('/applications', [AdminReportController::class, 'applications']);
+            Route::get('/applications/export/excel', [AdminReportController::class, 'exportApplicationsExcel']);
+            Route::get('/applications/export/pdf', [AdminReportController::class, 'exportApplicationsPdf']);
+            Route::get('/users', [AdminReportController::class, 'users']);
+        });
+        // Categories CRUD
+        Route::get('/categories', [AdminCategoryController::class, 'index']);
+        Route::post('/categories', [AdminCategoryController::class, 'store']);
+        Route::get('/categories/{id}', [AdminCategoryController::class, 'show']);
+        Route::put('/categories/{id}', [AdminCategoryController::class, 'update']);
+        Route::delete('/categories/{id}', [AdminCategoryController::class, 'destroy']);
+
+        // Programs CRUD
+        Route::get('/programs', [AdminProgramController::class, 'index']);
+        Route::post('/programs', [AdminProgramController::class, 'store']);
+        Route::get('/programs/{id}', [AdminProgramController::class, 'show']);
+        Route::put('/programs/{id}', [AdminProgramController::class, 'update']);
+        Route::delete('/programs/{id}', [AdminProgramController::class, 'destroy']);
+
+        // Campaigns CRUD
+        Route::get('/campaigns', [AdminCampaignController::class, 'index']);
+        Route::post('/campaigns', [AdminCampaignController::class, 'store']);
+        Route::get('/campaigns/{id}', [AdminCampaignController::class, 'show']);
+        Route::put('/campaigns/{id}', [AdminCampaignController::class, 'update']);
+        Route::delete('/campaigns/{id}', [AdminCampaignController::class, 'destroy']);
+
+        // Donations listing
+        Route::get('/donations', [AdminDonationController::class, 'index']);
+
+        // Student applications
+        Route::get('/applications', [AdminApplicationController::class, 'index']);
+        Route::put('/applications/{id}/status', [AdminApplicationController::class, 'updateStatus']);
+
+        // Users management
+        Route::get('/users', [AdminUserController::class, 'index']);
+        Route::post('/users', [AdminUserController::class, 'store']);
+        Route::put('/users/{id}/role', [AdminUserController::class, 'updateRole']);
+
+        // Roles management
+        Route::get('/roles', [AdminRoleController::class, 'index']);
+        Route::post('/roles', [AdminRoleController::class, 'store']);
+        Route::get('/roles/{id}', [AdminRoleController::class, 'show']);
+        Route::put('/roles/{id}', [AdminRoleController::class, 'update']);
+        Route::delete('/roles/{id}', [AdminRoleController::class, 'destroy']);
+
+        // Permissions management
+        Route::get('/permissions', [AdminPermissionController::class, 'index']);
+        Route::post('/permissions', [AdminPermissionController::class, 'store']);
+        Route::get('/permissions/{id}', [AdminPermissionController::class, 'show']);
+        Route::put('/permissions/{id}', [AdminPermissionController::class, 'update']);
+        Route::delete('/permissions/{id}', [AdminPermissionController::class, 'destroy']);
     });
 });
 

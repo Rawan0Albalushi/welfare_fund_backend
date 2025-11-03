@@ -15,34 +15,44 @@ class SupportProgramsSeeder extends Seeder
     {
         // Get or create the support category
         $supportCategory = Category::firstOrCreate([
-            'name' => 'برامج الدعم الطلابي'
+            'name_ar' => 'برامج الدعم الطلابي'
         ], [
+            'name_ar' => 'برامج الدعم الطلابي',
+            'name_en' => 'Student Support Programs',
             'status' => 'active'
         ]);
 
         // Define the support programs
         $supportPrograms = [
             [
-                'title' => 'برنامج فرص التعليم العالي',
-                'description' => 'برنامج لدعم الطلاب في الحصول على فرص التعليم العالي والمنح الدراسية',
+                'title_ar' => 'برنامج فرص التعليم العالي',
+                'title_en' => 'Higher Education Opportunities Program',
+                'description_ar' => 'برنامج لدعم الطلاب في الحصول على فرص التعليم العالي والمنح الدراسية',
+                'description_en' => 'A program to support students in obtaining higher education opportunities and scholarships',
                 'status' => 'active',
                 'category_id' => $supportCategory->id,
             ],
             [
-                'title' => 'برنامج السكن والنقل',
-                'description' => 'برنامج لدعم الطلاب في تكاليف السكن والنقل الجامعي',
+                'title_ar' => 'برنامج السكن والنقل',
+                'title_en' => 'Housing and Transportation Program',
+                'description_ar' => 'برنامج لدعم الطلاب في تكاليف السكن والنقل الجامعي',
+                'description_en' => 'A program to support students with housing and university transportation costs',
                 'status' => 'active',
                 'category_id' => $supportCategory->id,
             ],
             [
-                'title' => 'برنامج الاعانة الشهرية',
-                'description' => 'برنامج لتقديم إعانات شهرية للطلاب المحتاجين',
+                'title_ar' => 'برنامج الاعانة الشهرية',
+                'title_en' => 'Monthly Allowance Program',
+                'description_ar' => 'برنامج لتقديم إعانات شهرية للطلاب المحتاجين',
+                'description_en' => 'A program to provide monthly allowances for students in need',
                 'status' => 'active',
                 'category_id' => $supportCategory->id,
             ],
             [
-                'title' => 'رسوم الاختبارات',
-                'description' => 'برنامج لدعم الطلاب في رسوم الاختبارات والامتحانات',
+                'title_ar' => 'رسوم الاختبارات',
+                'title_en' => 'Examination Fees',
+                'description_ar' => 'برنامج لدعم الطلاب في رسوم الاختبارات والامتحانات',
+                'description_en' => 'A program to support students with examination and test fees',
                 'status' => 'active',
                 'category_id' => $supportCategory->id,
             ],
@@ -51,7 +61,7 @@ class SupportProgramsSeeder extends Seeder
         // Create or update the programs
         foreach ($supportPrograms as $programData) {
             Program::updateOrCreate(
-                ['title' => $programData['title']],
+                ['title_ar' => $programData['title_ar']],
                 $programData
             );
         }

@@ -18,7 +18,7 @@ class ApplicationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = StudentRegistration::with(['user:id,name,phone', 'program:id,title']);
+        $query = StudentRegistration::with(['user:id,name,phone', 'program:id,title_ar,title_en']);
 
         // Filter by status
         if ($request->has('status')) {
@@ -53,7 +53,7 @@ class ApplicationController extends Controller
 
         return response()->json([
             'message' => 'Application status updated successfully',
-            'data' => new StudentRegistrationResource($application->load(['user:id,name,phone', 'program:id,title'])),
+            'data' => new StudentRegistrationResource($application->load(['user:id,name,phone', 'program:id,title_ar,title_en'])),
         ]);
     }
 }

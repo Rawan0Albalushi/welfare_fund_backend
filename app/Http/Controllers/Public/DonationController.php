@@ -447,13 +447,13 @@ class DonationController extends Controller
                           $q->whereNull('user_id')
                             ->whereJsonContains('payload->phone', $user->phone);
                       })
-                      ->orWhere(function ($q) use ($user) {
-                          $q->whereNull('user_id')
-                            ->where('donor_name', $user->name);
-                      });
-            })
-            ->with(['program:id,title', 'giftMeta', 'campaign:id,title'])
-            ->first();
+                     ->orWhere(function ($q) use ($user) {
+                         $q->whereNull('user_id')
+                           ->where('donor_name', $user->name);
+                     });
+           })
+           ->with(['program:id,title_ar,title_en', 'giftMeta', 'campaign:id,title_ar,title_en'])
+           ->first();
 
         if (!$donation) {
             return response()->json([

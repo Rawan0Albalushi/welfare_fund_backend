@@ -89,7 +89,7 @@ class RegistrationController extends Controller
 
         return response()->json([
             'message' => 'Registration created successfully',
-            'data' => new StudentRegistrationResource($application->load(['program:id,title', 'user:id,name'])),
+            'data' => new StudentRegistrationResource($application->load(['program:id,title_ar,title_en', 'user:id,name'])),
         ], 201);
     }
 
@@ -145,7 +145,7 @@ class RegistrationController extends Controller
         $user = $request->user();
         
         $query = StudentRegistration::where('user_id', $user->id)
-            ->with(['program:id,title']);
+            ->with(['program:id,title_ar,title_en']);
 
         // Filter by status
         if ($request->has('status')) {
@@ -230,7 +230,7 @@ class RegistrationController extends Controller
         $user = $request->user();
         
         $registration = StudentRegistration::where('user_id', $user->id)
-            ->with(['program:id,title'])
+            ->with(['program:id,title_ar,title_en'])
             ->latest()
             ->first();
 
@@ -293,7 +293,7 @@ class RegistrationController extends Controller
         $user = $request->user();
         
         $application = StudentRegistration::where('user_id', $user->id)
-            ->with(['program:id,title', 'user:id,name'])
+            ->with(['program:id,title_ar,title_en', 'user:id,name'])
             ->findOrFail($id);
 
         return response()->json([
@@ -470,7 +470,7 @@ class RegistrationController extends Controller
 
         return response()->json([
             'message' => 'Registration updated successfully',
-            'data' => new StudentRegistrationResource($registration->load(['program:id,title', 'user:id,name'])),
+            'data' => new StudentRegistrationResource($registration->load(['program:id,title_ar,title_en', 'user:id,name'])),
         ]);
     }
 }

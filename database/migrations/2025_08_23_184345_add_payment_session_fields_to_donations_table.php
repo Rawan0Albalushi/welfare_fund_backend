@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('donations', function (Blueprint $table) {
+            $table->string('payment_session_id')->nullable()->after('paid_amount');
             $table->text('payment_url')->nullable()->after('payment_session_id');
         });
     }
@@ -22,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('donations', function (Blueprint $table) {
-            $table->dropColumn('payment_url');
+            $table->dropColumn(['payment_session_id', 'payment_url']);
         });
     }
 };

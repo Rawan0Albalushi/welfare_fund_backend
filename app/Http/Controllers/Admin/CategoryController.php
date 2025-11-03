@@ -97,7 +97,8 @@ class CategoryController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name',
+            'name_ar' => 'required|string|max:255',
+            'name_en' => 'required|string|max:255',
             'status' => 'sometimes|in:active,inactive',
         ]);
 
@@ -177,7 +178,8 @@ class CategoryController extends Controller
         $category = Category::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255|unique:categories,name,' . $id,
+            'name_ar' => 'sometimes|string|max:255',
+            'name_en' => 'sometimes|string|max:255',
             'status' => 'sometimes|in:active,inactive',
         ]);
 

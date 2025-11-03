@@ -235,7 +235,9 @@ class CatalogController extends Controller
     public function supportPrograms()
     {
         // البحث عن فئة برامج الدعم الطلابي
-        $supportCategory = Category::where('name', 'برامج الدعم الطلابي')->first();
+        $supportCategory = Category::where('name_ar', 'برامج الدعم الطلابي')
+            ->orWhere('name_en', 'Student Support Programs')
+            ->first();
         
         if (!$supportCategory) {
             return response()->json([
@@ -247,7 +249,7 @@ class CatalogController extends Controller
         $programs = Program::where('category_id', $supportCategory->id)
             ->where('status', 'active')
             ->with('category')
-            ->orderBy('title')
+            ->orderBy('title_ar')
             ->get();
 
         return response()->json([

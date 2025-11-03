@@ -17,8 +17,10 @@ class Campaign extends Model
      */
     protected $fillable = [
         'category_id',
-        'title',
-        'description',
+        'title_ar',
+        'title_en',
+        'description_ar',
+        'description_en',
         'image',
         'goal_amount',
         'raised_amount',
@@ -26,7 +28,8 @@ class Campaign extends Model
         'start_date',
         'end_date',
         'target_donors',
-        'impact_description',
+        'impact_description_ar',
+        'impact_description_en',
         'campaign_highlights',
     ];
 
@@ -80,8 +83,10 @@ class Campaign extends Model
      */
     public function scopeSearch($query, $search)
     {
-        return $query->where('title', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+        return $query->where('title_ar', 'like', "%{$search}%")
+                    ->orWhere('title_en', 'like', "%{$search}%")
+                    ->orWhere('description_ar', 'like', "%{$search}%")
+                    ->orWhere('description_en', 'like', "%{$search}%");
     }
 
     /**

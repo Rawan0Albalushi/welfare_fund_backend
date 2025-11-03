@@ -21,31 +21,60 @@ class UpdateDataSeeder extends Seeder
 
         // إنشاء فئات برامج الدعم الطلابي (4 فئات فقط)
         $supportCategories = [
-            'الإعانة الشهرية',
-            'السكن والنقل',
-            'فرص التعليم العالي',
-            'رسوم الاختبارات',
+            [
+                'name_ar' => 'الإعانة الشهرية',
+                'name_en' => 'Monthly Allowance',
+            ],
+            [
+                'name_ar' => 'السكن والنقل',
+                'name_en' => 'Housing and Transportation',
+            ],
+            [
+                'name_ar' => 'فرص التعليم العالي',
+                'name_en' => 'Higher Education Opportunities',
+            ],
+            [
+                'name_ar' => 'رسوم الاختبارات',
+                'name_en' => 'Examination Fees',
+            ],
         ];
 
-        foreach ($supportCategories as $name) {
+        foreach ($supportCategories as $category) {
             Category::create([
-                'name' => $name,
+                'name_ar' => $category['name_ar'],
+                'name_en' => $category['name_en'],
                 'status' => 'active',
             ]);
         }
 
         // إنشاء فئات حملات التبرع الخيرية
         $campaignCategories = [
-            'حملات الطوارئ',
-            'حملات التعليم',
-            'حملات الصحة',
-            'حملات الإغاثة',
-            'حملات البناء',
+            [
+                'name_ar' => 'حملات الطوارئ',
+                'name_en' => 'Emergency Campaigns',
+            ],
+            [
+                'name_ar' => 'حملات التعليم',
+                'name_en' => 'Education Campaigns',
+            ],
+            [
+                'name_ar' => 'حملات الصحة',
+                'name_en' => 'Health Campaigns',
+            ],
+            [
+                'name_ar' => 'حملات الإغاثة',
+                'name_en' => 'Relief Campaigns',
+            ],
+            [
+                'name_ar' => 'حملات البناء',
+                'name_en' => 'Construction Campaigns',
+            ],
         ];
 
-        foreach ($campaignCategories as $name) {
+        foreach ($campaignCategories as $category) {
             Category::create([
-                'name' => $name,
+                'name_ar' => $category['name_ar'],
+                'name_en' => $category['name_en'],
                 'status' => 'active',
             ]);
         }
@@ -95,7 +124,7 @@ class UpdateDataSeeder extends Seeder
         ];
 
         foreach ($supportPrograms as $programData) {
-            $category = Category::where('name', $programData['category_name'])->first();
+            $category = Category::where('name_ar', $programData['category_name'])->first();
             
             if ($category) {
                 Program::create([
@@ -103,11 +132,7 @@ class UpdateDataSeeder extends Seeder
                     'title' => $programData['title'],
                     'description' => $programData['description'],
                     'image' => $programData['image'],
-                    'goal_amount' => $programData['goal_amount'],
-                    'raised_amount' => $programData['raised_amount'],
                     'status' => 'active',
-                    'start_date' => $programData['start_date'],
-                    'end_date' => $programData['end_date'],
                 ]);
             }
         }
@@ -261,13 +286,15 @@ class UpdateDataSeeder extends Seeder
         ];
 
         foreach ($donationCampaigns as $campaignData) {
-            $category = Category::where('name', $campaignData['category_name'])->first();
+            $category = Category::where('name_ar', $campaignData['category_name'])->first();
             
             if ($category) {
                 Campaign::create([
                     'category_id' => $category->id,
-                    'title' => $campaignData['title'],
-                    'description' => $campaignData['description'],
+                    'title_ar' => $campaignData['title_ar'],
+                    'title_en' => $campaignData['title_en'],
+                    'description_ar' => $campaignData['description_ar'],
+                    'description_en' => $campaignData['description_en'],
                     'image' => $campaignData['image'],
                     'goal_amount' => $campaignData['goal_amount'],
                     'raised_amount' => $campaignData['raised_amount'],
@@ -275,7 +302,8 @@ class UpdateDataSeeder extends Seeder
                     'start_date' => $campaignData['start_date'],
                     'end_date' => $campaignData['end_date'],
                     'target_donors' => $campaignData['target_donors'],
-                    'impact_description' => $campaignData['impact_description'],
+                    'impact_description_ar' => $campaignData['impact_description_ar'],
+                    'impact_description_en' => $campaignData['impact_description_en'],
                     'campaign_highlights' => $campaignData['campaign_highlights'],
                 ]);
             }

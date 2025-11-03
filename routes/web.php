@@ -17,3 +17,8 @@ Route::get('/', function () {
 
 Route::get('/payment/bridge/success', [App\Http\Controllers\PaymentsController::class, 'bridgeSuccess']);
 Route::get('/payment/bridge/cancel', [App\Http\Controllers\PaymentsController::class, 'bridgeCancel']);
+
+// Optional: Fallback login route for APIs that trigger auth redirect
+Route::get('/login', function () {
+    return response()->json(['message' => 'Unauthorized'], 401);
+})->name('login');

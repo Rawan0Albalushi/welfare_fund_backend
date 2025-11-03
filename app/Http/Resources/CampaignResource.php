@@ -16,8 +16,10 @@ class CampaignResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
-            'description' => $this->description,
+            'title_ar' => $this->title_ar,
+            'title_en' => $this->title_en,
+            'description_ar' => $this->description_ar,
+            'description_en' => $this->description_en,
             'image' => $this->image,
             'goal_amount' => $this->goal_amount,
             'raised_amount' => $this->raised_amount,
@@ -28,7 +30,8 @@ class CampaignResource extends JsonResource
             'end_date' => $this->end_date?->toDateString(),
             'days_remaining' => $this->days_remaining,
             'target_donors' => $this->target_donors,
-            'impact_description' => $this->impact_description,
+            'impact_description_ar' => $this->impact_description_ar,
+            'impact_description_en' => $this->impact_description_en,
             'campaign_highlights' => $this->campaign_highlights,
             'is_urgent' => $this->is_urgent,
             'is_completed' => $this->is_completed,

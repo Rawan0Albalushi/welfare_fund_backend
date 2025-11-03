@@ -49,13 +49,13 @@ class RoleSeeder extends Seeder
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission], ['guard_name' => config('auth.defaults.guard')]);
         }
 
         // Create roles
-        $adminRole = Role::create(['name' => 'admin']);
-        $reviewerRole = Role::create(['name' => 'reviewer']);
-        $userRole = Role::create(['name' => 'user']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin'], ['guard_name' => config('auth.defaults.guard')]);
+        $reviewerRole = Role::firstOrCreate(['name' => 'reviewer'], ['guard_name' => config('auth.defaults.guard')]);
+        $userRole = Role::firstOrCreate(['name' => 'user'], ['guard_name' => config('auth.defaults.guard')]);
 
         // Assign permissions to admin role
         $adminRole->givePermissionTo(Permission::all());

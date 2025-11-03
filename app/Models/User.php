@@ -24,6 +24,7 @@ class User extends Authenticatable
         'phone',
         'email',
         'password',
+        'role',
         'settings',
     ];
 
@@ -48,6 +49,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'settings' => 'array',
+            'role' => 'string',
         ];
     }
 
