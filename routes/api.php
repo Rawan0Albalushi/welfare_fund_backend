@@ -165,6 +165,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/campaigns/{id}', [AdminCampaignController::class, 'show']);
         Route::put('/campaigns/{id}', [AdminCampaignController::class, 'update']);
         Route::delete('/campaigns/{id}', [AdminCampaignController::class, 'destroy']);
+        Route::post('/upload/image', [AdminCampaignController::class, 'uploadImage']);
 
         // Donations listing
         Route::get('/donations', [AdminDonationController::class, 'index']);

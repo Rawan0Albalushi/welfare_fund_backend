@@ -34,6 +34,15 @@ class Campaign extends Model
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = [
+        'image_url',
+    ];
+
+    /**
      * The attributes that should be cast.
      *
      * @var array<string, string>
@@ -169,5 +178,17 @@ class Campaign extends Model
         ];
 
         return $statuses[$this->status] ?? $this->status;
+    }
+
+    /**
+     * Get the full URL for the campaign image.
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (empty($this->image)) {
+            return null;
+        }
+
+        return url('/image/campaigns/' . basename($this->image));
     }
 }

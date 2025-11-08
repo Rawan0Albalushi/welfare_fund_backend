@@ -22,3 +22,15 @@ Route::get('/payment/bridge/cancel', [App\Http\Controllers\PaymentsController::c
 Route::get('/login', function () {
     return response()->json(['message' => 'Unauthorized'], 401);
 })->name('login');
+
+Route::get('/image/{folder}/{filename}', function ($folder, $filename) {
+    $path = storage_path("app/public/$folder/$filename");
+
+    if (!file_exists($path)) {
+        abort(404);
+    }
+
+    return response()->file($path, [
+        'Access-Control-Allow-Origin' => '*',
+    ]);
+});

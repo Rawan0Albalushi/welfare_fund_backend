@@ -7,6 +7,7 @@ use App\Http\Resources\CampaignResource;
 use App\Models\Campaign;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @OA\Tag(
@@ -47,7 +48,7 @@ class CampaignController extends Controller
             'title_en' => 'required|string|max:255',
             'description_ar' => 'required|string',
             'description_en' => 'required|string',
-            'image' => 'nullable|string',
+            'image' => 'nullable',
             'goal_amount' => 'required|numeric|min:0',
             'status' => 'sometimes|in:draft,active,paused,completed,archived',
             'start_date' => 'sometimes|date',
@@ -57,6 +58,10 @@ class CampaignController extends Controller
             'impact_description_en' => 'nullable|string',
             'campaign_highlights' => 'nullable|array',
         ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('campaigns', 'public');
+        }
 
         $campaign = Campaign::create($validated);
 
@@ -86,7 +91,7 @@ class CampaignController extends Controller
             'title_en' => 'sometimes|string|max:255',
             'description_ar' => 'sometimes|string',
             'description_en' => 'sometimes|string',
-            'image' => 'nullable|string',
+            'image' => 'sometimes|nullable',
             'goal_amount' => 'sometimes|numeric|min:0',
             'status' => 'sometimes|in:draft,active,paused,completed,archived',
             'start_date' => 'sometimes|date',
@@ -97,12 +102,33 @@ class CampaignController extends Controller
             'campaign_highlights' => 'nullable|array',
         ]);
 
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('campaigns', 'public');
+        }
+
         $campaign->update($validated);
 
         return response()->json([
             'message' => 'Campaign updated successfully',
             'data' => new CampaignResource($campaign->load('category')),
         ]);
+    }
+
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+        $path = $request->file('image')->store('campaigns', 'public');
+
+        return response()->json([
+            'message' => 'Image uploaded successfully',
+            'data' => [
+                'path' => $path,
+                'url' => Storage::disk('public')->url($path),
+            ],
+        ], 201);
     }
 
     public function destroy(int $id): JsonResponse
