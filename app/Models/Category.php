@@ -31,14 +31,6 @@ class Category extends Model
     ];
 
     /**
-     * Get the programs for this category.
-     */
-    public function programs()
-    {
-        return $this->hasMany(Program::class);
-    }
-
-    /**
      * Scope a query to only include active categories.
      */
     public function scopeActive($query)

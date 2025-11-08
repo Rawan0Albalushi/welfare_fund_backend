@@ -280,6 +280,12 @@ class PaymentsController extends Controller
                             : now(),
                         'payload' => $sessionDetails,
                     ]);
+
+                    if ($donation->campaign_id) {
+                        $donation->campaign()
+                            ->where('id', $donation->campaign_id)
+                            ->increment('raised_amount', $paidAmount);
+                    }
                 } elseif ($paymentStatus === 'canceled') {
                     $donation->update(['status' => 'canceled']);
                 }

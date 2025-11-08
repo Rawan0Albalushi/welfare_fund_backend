@@ -25,6 +25,13 @@ class DonationResource extends JsonResource
             'expires_at' => $this->expires_at?->toISOString(),
             'paid_at' => $this->paid_at?->toISOString(),
             'program' => new ProgramResource($this->whenLoaded('program')),
+            'campaign' => $this->whenLoaded('campaign', function () {
+                return [
+                    'id' => $this->campaign->id,
+                    'title_ar' => $this->campaign->title_ar,
+                    'title_en' => $this->campaign->title_en,
+                ];
+            }),
             'gift_meta' => $this->whenLoaded('giftMeta', function () {
                 return [
                     'recipient_name' => $this->giftMeta->recipient_name,

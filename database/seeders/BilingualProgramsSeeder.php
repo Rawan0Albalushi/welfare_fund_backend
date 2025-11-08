@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Category;
 use App\Models\Program;
 use Illuminate\Database\Seeder;
 
@@ -19,7 +18,6 @@ class BilingualProgramsSeeder extends Seeder
         // بيانات البرامج باللغتين العربية والإنجليزية
         $programs = [
             [
-                'category_name' => 'الإعانة الشهرية',
                 'title_ar' => 'برنامج الإعانة الشهرية',
                 'title_en' => 'Monthly Allowance Program',
                 'description_ar' => 'برنامج مخصص لتقديم دعم مالي شهري للطلاب المحتاجين. يساعد الطلاب في تغطية المصاريف الأساسية مثل الطعام والملابس والكتب الدراسية.',
@@ -28,7 +26,6 @@ class BilingualProgramsSeeder extends Seeder
                 'status' => 'active',
             ],
             [
-                'category_name' => 'السكن والنقل',
                 'title_ar' => 'برنامج السكن والنقل',
                 'title_en' => 'Housing and Transportation Program',
                 'description_ar' => 'برنامج يساعد الطلاب في توفير سكن مناسب ووسائل النقل. يشمل دعم إيجار السكن وتذاكر المواصلات للطلاب المحتاجين.',
@@ -37,7 +34,6 @@ class BilingualProgramsSeeder extends Seeder
                 'status' => 'active',
             ],
             [
-                'category_name' => 'فرص التعليم العالي',
                 'title_ar' => 'برنامج فرص التعليم العالي',
                 'title_en' => 'Higher Education Opportunities Program',
                 'description_ar' => 'برنامج يهدف إلى توفير فرص تعليمية للطلاب المتفوقين. يشمل منح دراسية وبرامج تطوير المهارات والتدريب المهني.',
@@ -46,7 +42,6 @@ class BilingualProgramsSeeder extends Seeder
                 'status' => 'active',
             ],
             [
-                'category_name' => 'رسوم الاختبارات',
                 'title_ar' => 'برنامج رسوم الاختبارات',
                 'title_en' => 'Examination Fees Program',
                 'description_ar' => 'برنامج لتغطية رسوم الاختبارات والامتحانات للطلاب المحتاجين. يساعد الطلاب في دفع رسوم الاختبارات الدولية والمحلية.',
@@ -57,19 +52,14 @@ class BilingualProgramsSeeder extends Seeder
         ];
 
         foreach ($programs as $programData) {
-            $category = Category::where('name_ar', $programData['category_name'])->first();
-            
-            if ($category) {
-                Program::create([
-                    'category_id' => $category->id,
-                    'title_ar' => $programData['title_ar'],
-                    'title_en' => $programData['title_en'],
-                    'description_ar' => $programData['description_ar'],
-                    'description_en' => $programData['description_en'],
-                    'image' => $programData['image'],
-                    'status' => $programData['status'],
-                ]);
-            }
+            Program::create([
+                'title_ar' => $programData['title_ar'],
+                'title_en' => $programData['title_en'],
+                'description_ar' => $programData['description_ar'],
+                'description_en' => $programData['description_en'],
+                'image' => $programData['image'],
+                'status' => $programData['status'],
+            ]);
         }
 
         echo "تم إنشاء البرامج بنجاح!\n";

@@ -54,8 +54,7 @@ class CategoryController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $categories = Category::withCount('programs')
-            ->orderBy('created_at', 'desc')
+        $categories = Category::orderBy('created_at', 'desc')
             ->paginate($request->get('per_page', 10));
 
         return response()->json([
@@ -135,7 +134,7 @@ class CategoryController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $category = Category::withCount('programs')->findOrFail($id);
+        $category = Category::findOrFail($id);
 
         return response()->json([
             'message' => 'Category retrieved successfully',

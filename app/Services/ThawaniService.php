@@ -242,6 +242,16 @@ class ThawaniService
 
             $donation->update($updateData);
 
+            if (
+                ($updateData['status'] ?? null) === 'paid' &&
+                $donation->campaign_id
+            ) {
+                $incrementAmount = $updateData['paid_amount'] ?? $donation->amount;
+                $donation->campaign()
+                    ->where('id', $donation->campaign_id)
+                    ->increment('raised_amount', $incrementAmount);
+            }
+
             return [
                 'status' => $updateData['status'],
                 'donation_id' => $donation->donation_id,

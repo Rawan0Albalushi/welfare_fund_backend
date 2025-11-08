@@ -22,7 +22,6 @@ class SupportProgramResource extends JsonResource
             'description_en' => $this->description_en,
             'image' => $this->image,
             'status' => $this->status,
-            'category' => new CategoryResource($this->whenLoaded('category')),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

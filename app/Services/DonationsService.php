@@ -117,17 +117,29 @@ class DonationsService
                 return false;
             }
 
+            $previousStatus = $donation->status;
+
+            $paidAmount = isset($data['paid_amount'])
+                ? (float) $data['paid_amount']
+                : (float) $donation->amount;
+
             // Update donation status
             $donation->update([
                 'status' => $data['status'],
                 'payload' => $data,
+                'paid_amount' => $data['status'] === 'paid' ? $paidAmount : null,
                 'paid_at' => $data['status'] === 'paid' ? Carbon::now() : null,
             ]);
 
-            // If payment is successful, update program raised amount
-            if ($data['status'] === 'paid') {
-                $program = $donation->program;
-                $program->increment('raised_amount', $donation->amount);
+            // If payment is successful, update campaign raised amount
+            if (
+                $data['status'] === 'paid' &&
+                $previousStatus !== 'paid' &&
+                $donation->campaign_id
+            ) {
+                $donation->campaign()
+                    ->where('id', $donation->campaign_id)
+                    ->increment('raised_amount', $paidAmount);
             }
 
             // Log the webhook

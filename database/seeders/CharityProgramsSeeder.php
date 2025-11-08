@@ -51,7 +51,6 @@ class CharityProgramsSeeder extends Seeder
         // برامج التبرعات الخيرية
         $programs = [
             [
-                'category_name_ar' => 'الإعانة الشهرية',
                 'title_ar' => 'مساعدة كبار السن',
                 'title_en' => 'Elderly Support',
                 'description_ar' => 'برنامج لدعم كبار السن في الحصول على الرعاية الصحية والاحتياجات الأساسية. نساعد في توفير الأدوية والرعاية الطبية والاحتياجات اليومية.',
@@ -59,7 +58,6 @@ class CharityProgramsSeeder extends Seeder
                 'image' => 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?w=800&h=600&fit=crop',
             ],
             [
-                'category_name_ar' => 'السكن والنقل',
                 'title_ar' => 'مساعدة الأسر المحتاجة',
                 'title_en' => 'Support for Needy Families',
                 'description_ar' => 'برنامج لدعم الأسر المحتاجة في توفير السكن المناسب ووسائل النقل. نساعد في دفع الإيجارات وتوفير وسائل النقل للطلاب والعائلات.',
@@ -67,7 +65,6 @@ class CharityProgramsSeeder extends Seeder
                 'image' => 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop',
             ],
             [
-                'category_name_ar' => 'فرص التعليم',
                 'title_ar' => 'منح دراسية للطلاب المتفوقين',
                 'title_en' => 'Scholarships for Outstanding Students',
                 'description_ar' => 'برنامج لتوفير منح دراسية للطلاب المتفوقين من الأسر المحتاجة. نساعد في تغطية الرسوم الدراسية والكتب والمستلزمات التعليمية.',
@@ -75,7 +72,6 @@ class CharityProgramsSeeder extends Seeder
                 'image' => 'https://images.unsplash.com/photo-1523050854058-8df90110c9e1?w=800&h=600&fit=crop',
             ],
             [
-                'category_name_ar' => 'الرعاية الصحية',
                 'title_ar' => 'علاج الأطفال المرضى',
                 'title_en' => 'Treatment for Sick Children',
                 'description_ar' => 'برنامج لمساعدة الأطفال المرضى في الحصول على العلاج الطبي المناسب. نساعد في تغطية تكاليف العمليات الجراحية والأدوية والرعاية الطبية.',
@@ -83,7 +79,6 @@ class CharityProgramsSeeder extends Seeder
                 'image' => 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&h=600&fit=crop',
             ],
             [
-                'category_name_ar' => 'مساعدة الأسر المحتاجة',
                 'title_ar' => 'توفير الطعام للأسر الفقيرة',
                 'title_en' => 'Food Support for Poor Families',
                 'description_ar' => 'برنامج لتوفير الطعام والمواد الغذائية الأساسية للأسر الفقيرة. نساعد في توزيع السلال الغذائية وتوفير الوجبات اليومية.',
@@ -91,7 +86,6 @@ class CharityProgramsSeeder extends Seeder
                 'image' => 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=600&fit=crop',
             ],
             [
-                'category_name_ar' => 'الإعانة الشهرية',
                 'title_ar' => 'دعم الأرامل والأيتام',
                 'title_en' => 'Support for Widows and Orphans',
                 'description_ar' => 'برنامج لدعم الأرامل والأيتام في توفير الاحتياجات الأساسية. نساعد في دفع الإيجارات والطعام والملابس والتعليم.',
@@ -99,7 +93,6 @@ class CharityProgramsSeeder extends Seeder
                 'image' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop',
             ],
             [
-                'category_name_ar' => 'فرص التعليم',
                 'title_ar' => 'تطوير المهارات المهنية',
                 'title_en' => 'Professional Skills Development',
                 'description_ar' => 'برنامج لمساعدة الشباب في تطوير المهارات المهنية والحصول على التدريب المهني. نساعد في توفير دورات تدريبية ومعدات العمل.',
@@ -107,7 +100,6 @@ class CharityProgramsSeeder extends Seeder
                 'image' => 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop',
             ],
             [
-                'category_name_ar' => 'السكن والنقل',
                 'title_ar' => 'توفير سكن للطلاب الجامعيين',
                 'title_en' => 'Housing for University Students',
                 'description_ar' => 'برنامج لتوفير سكن مناسب للطلاب الجامعيين من المناطق النائية. نساعد في دفع إيجارات السكن وتوفير بيئة مناسبة للدراسة.',
@@ -117,25 +109,18 @@ class CharityProgramsSeeder extends Seeder
         ];
 
         foreach ($programs as $programData) {
-            $category = Category::where('name_ar', $programData['category_name_ar'])->first();
-            
-            if ($category) {
-                Program::firstOrCreate(
-                    [
-                        'title_ar' => $programData['title_ar'],
-                        'category_id' => $category->id,
-                    ],
-                    [
-                        'category_id' => $category->id,
-                        'title_ar' => $programData['title_ar'],
-                        'title_en' => $programData['title_en'],
-                        'description_ar' => $programData['description_ar'],
-                        'description_en' => $programData['description_en'],
-                        'image' => $programData['image'],
-                        'status' => 'active',
-                    ]
-                );
-            }
+            Program::firstOrCreate(
+                [
+                    'title_ar' => $programData['title_ar'],
+                ],
+                [
+                    'title_en' => $programData['title_en'],
+                    'description_ar' => $programData['description_ar'],
+                    'description_en' => $programData['description_en'],
+                    'image' => $programData['image'],
+                    'status' => 'active',
+                ]
+            );
         }
     }
 }

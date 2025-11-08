@@ -18,7 +18,12 @@ class DonationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Donation::with(['user:id,name,phone', 'program:id,title_ar,title_en', 'giftMeta']);
+        $query = Donation::with([
+            'user:id,name,phone',
+            'program:id,title_ar,title_en',
+            'campaign:id,title_ar,title_en',
+            'giftMeta',
+        ]);
 
         // Filter by status
         if ($request->has('status')) {

@@ -41,7 +41,7 @@ class CatalogController extends Controller
      */
     public function categories(): JsonResponse
     {
-        $categories = Category::active()->withCount('programs')->get();
+        $categories = Category::active()->get();
 
         return response()->json([
             'message' => 'Categories retrieved successfully',
@@ -54,13 +54,6 @@ class CatalogController extends Controller
      *     path="/api/v1/programs",
      *     summary="Get programs with optional filtering",
      *     tags={"Public Catalog"},
-     *     @OA\Parameter(
-     *         name="category_id",
-     *         in="query",
-     *         description="Filter by category ID",
-     *         required=false,
-     *         @OA\Schema(type="integer")
-     *     ),
      *     @OA\Parameter(
      *         name="search",
      *         in="query",
@@ -100,14 +93,9 @@ class CatalogController extends Controller
      */
     public function programs(Request $request): JsonResponse
     {
-        $query = Program::active()->with(['category', 'donations' => function ($query) {
+        $query = Program::active()->with(['donations' => function ($query) {
             $query->where('status', 'paid');
         }]);
-
-        // Filter by category
-        if ($request->has('category_id')) {
-            $query->byCategory($request->category_id);
-        }
 
         // Search functionality
         if ($request->has('search')) {
@@ -158,7 +146,7 @@ class CatalogController extends Controller
     public function show(int $id): JsonResponse
     {
         $program = Program::active()
-            ->with(['category', 'donations' => function ($query) {
+            ->with(['donations' => function ($query) {
                 $query->where('status', 'paid');
             }])
             ->findOrFail($id);
@@ -224,8 +212,10 @@ class CatalogController extends Controller
      *             @OA\Property(property="message", type="string", example="Support programs retrieved successfully"),
      *             @OA\Property(property="data", type="array", @OA\Items(
      *                 @OA\Property(property="id", type="integer", example=1),
-     *                 @OA\Property(property="title", type="string", example="برنامج فرص التعليم العالي"),
-     *                 @OA\Property(property="description", type="string", example="برنامج لدعم الطلاب في الحصول على فرص التعليم العالي والمنح الدراسية"),
+     *                 @OA\Property(property="title_ar", type="string", example="برنامج فرص التعليم العالي"),
+     *                 @OA\Property(property="title_en", type="string", example="Higher Education Opportunities Program"),
+     *                 @OA\Property(property="description_ar", type="string", example="برنامج لدعم الطلاب في الحصول على فرص التعليم العالي والمنح الدراسية"),
+     *                 @OA\Property(property="description_en", type="string", example="A program to support students in obtaining higher education opportunities and scholarships"),
      *                 @OA\Property(property="status", type="string", example="active")
      *             ))
      *         )
@@ -234,21 +224,7 @@ class CatalogController extends Controller
      */
     public function supportPrograms()
     {
-        // البحث عن فئة برامج الدعم الطلابي
-        $supportCategory = Category::where('name_ar', 'برامج الدعم الطلابي')
-            ->orWhere('name_en', 'Student Support Programs')
-            ->first();
-        
-        if (!$supportCategory) {
-            return response()->json([
-                'message' => 'Support category not found',
-                'data' => []
-            ], 404);
-        }
-
-        $programs = Program::where('category_id', $supportCategory->id)
-            ->where('status', 'active')
-            ->with('category')
+        $programs = Program::where('status', 'active')
             ->orderBy('title_ar')
             ->get();
 

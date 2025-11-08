@@ -60,7 +60,12 @@ class DashboardController extends Controller
     public function dashboard(Request $request): JsonResponse
     {
         try {
-            $recentDonations = Donation::with(['user:id,name,phone', 'program:id,title_ar,title_en', 'giftMeta'])
+            $recentDonations = Donation::with([
+                    'user:id,name,phone',
+                    'program:id,title_ar,title_en',
+                    'campaign:id,title_ar,title_en',
+                    'giftMeta',
+                ])
                 ->orderByDesc('created_at')
                 ->limit(10)
                 ->get();

@@ -115,6 +115,15 @@ class PaymentsReconcile extends Command
 
                 if (!$isDryRun) {
                     $donation->update($updateData);
+
+                    if (
+                        ($updateData['status'] ?? null) === 'paid' &&
+                        $donation->campaign_id
+                    ) {
+                        $donation->campaign()
+                            ->where('id', $donation->campaign_id)
+                            ->increment('raised_amount', $updateData['paid_amount'] ?? $donation->amount);
+                    }
                 }
 
                 $updated++;

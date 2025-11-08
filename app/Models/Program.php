@@ -16,7 +16,6 @@ class Program extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'category_id',
         'title_ar',
         'title_en',
         'description_ar',
@@ -24,14 +23,6 @@ class Program extends Model
         'image',
         'status',
     ];
-
-    /**
-     * Get the category that owns the program.
-     */
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
 
     /**
      * Get the donations for this program.
@@ -55,14 +46,6 @@ class Program extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
-    }
-
-    /**
-     * Scope a query to only include programs by category.
-     */
-    public function scopeByCategory($query, $categoryId)
-    {
-        return $query->where('category_id', $categoryId);
     }
 
     /**
