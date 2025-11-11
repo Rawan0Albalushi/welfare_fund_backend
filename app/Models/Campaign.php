@@ -145,6 +145,16 @@ class Campaign extends Model
      */
     public function getDonorsCountAttribute()
     {
+        $count = $this->getAttributeFromArray('donors_count');
+
+        if (!is_null($count)) {
+            return (int) $count;
+        }
+
+        if ($this->relationLoaded('donations')) {
+            return $this->donations->where('status', 'paid')->count();
+        }
+
         return $this->donations()->where('status', 'paid')->count();
     }
 

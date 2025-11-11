@@ -36,9 +36,7 @@ class CampaignResource extends JsonResource
             'campaign_highlights' => $this->campaign_highlights,
             'is_urgent' => $this->is_urgent,
             'is_completed' => $this->is_completed,
-            'donors_count' => $this->whenLoaded('donations', function () {
-                return $this->donors_count;
-            }),
+            'donors_count' => $this->donors_count,
             'category' => new CategoryResource($this->whenLoaded('category')),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),

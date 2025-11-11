@@ -81,9 +81,11 @@ class CampaignController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Campaign::active()->with(['category', 'donations' => function ($query) {
-            $query->where('status', 'paid');
-        }]);
+        $query = Campaign::active()
+            ->with(['category'])
+            ->withCount(['donations as donors_count' => function ($query) {
+                $query->where('status', 'paid');
+            }]);
 
         // Filter by category
         if ($request->has('category_id')) {
@@ -106,7 +108,7 @@ class CampaignController extends Controller
         }
 
         $campaigns = $query->orderBy('created_at', 'desc')
-            ->paginate($request->get('per_page', 10));
+            ->paginate($request->get('per_page', 5));
 
         return response()->json([
             'message' => 'Campaigns retrieved successfully',
@@ -149,7 +151,8 @@ class CampaignController extends Controller
     public function show(int $id): JsonResponse
     {
         $campaign = Campaign::active()
-            ->with(['category', 'donations' => function ($query) {
+            ->with(['category'])
+            ->withCount(['donations as donors_count' => function ($query) {
                 $query->where('status', 'paid');
             }])
             ->findOrFail($id);
@@ -178,7 +181,8 @@ class CampaignController extends Controller
     public function urgent(): JsonResponse
     {
         $campaigns = Campaign::active()
-            ->with(['category', 'donations' => function ($query) {
+            ->with(['category'])
+            ->withCount(['donations as donors_count' => function ($query) {
                 $query->where('status', 'paid');
             }])
             ->urgent()
@@ -208,7 +212,8 @@ class CampaignController extends Controller
     public function featured(): JsonResponse
     {
         $campaigns = Campaign::active()
-            ->with(['category', 'donations' => function ($query) {
+            ->with(['category'])
+            ->withCount(['donations as donors_count' => function ($query) {
                 $query->where('status', 'paid');
             }])
             ->featured()
