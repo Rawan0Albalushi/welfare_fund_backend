@@ -74,20 +74,62 @@ class PaymentController extends Controller
      */
     public function createPayment(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'products'               => 'required|array|min:1',
-            'products.*.name'        => 'required|string|max:255',
-            'products.*.quantity'    => 'required|integer|min:1',
-            'products.*.unit_amount' => 'required|integer|min:1', // بيسة
-            'return_origin'          => 'required|string|url',
+		// Legacy fast path: if client_reference_id + success_url/cancel_url provided, call wrapper service directly
+		if ($request->has('client_reference_id')) {
+			$validator = Validator::make($request->all(), [
+				'products'               => 'required|array|min:1',
+				'products.*.name'        => 'required|string|max:255',
+				'products.*.quantity'    => 'required|integer|min:1',
+				'products.*.unit_amount' => 'required|integer|min:1',
+				'client_reference_id'    => 'required|string',
+				'success_url'            => 'required|url',
+				'cancel_url'             => 'required|url',
+			]);
+			if ($validator->fails()) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Validation failed',
+					'errors'  => $validator->errors()
+				], 422);
+			}
 
-            // Donation related
-            'program_id'             => 'nullable|integer|exists:programs,id',
-            'campaign_id'            => 'nullable|integer|exists:campaigns,id',
-            'donor_name'             => 'nullable|string|max:255',
-            'note'                   => 'nullable|string|max:1000',
-            'type'                   => 'nullable|string|in:quick,gift',
-        ]);
+			try {
+				/** @var \App\Services\ThawaniPaymentService $wrapper */
+				$wrapper = app(\App\Services\ThawaniPaymentService::class);
+				$result = $wrapper->createSession(
+					$request->products,
+					$request->client_reference_id,
+					$request->success_url,
+					$request->cancel_url
+				);
+				return response()->json([
+					'success'     => true,
+					'message'     => 'OK',
+					'session_id'  => $result['session_id'],
+					'payment_url' => $result['payment_url'],
+				]);
+			} catch (\Exception $e) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Service error'
+				], 500);
+			}
+		}
+
+		$validator = Validator::make($request->all(), [
+			'products'               => 'required|array|min:1',
+			'products.*.name'        => 'required|string|max:255',
+			'products.*.quantity'    => 'required|integer|min:1',
+			'products.*.unit_amount' => 'required|integer|min:1', // بيسة
+			'return_origin'          => 'required|string|url',
+
+			// Donation related
+			'program_id'             => 'nullable|integer|exists:programs,id',
+			'campaign_id'            => 'nullable|integer|exists:campaigns,id',
+			'donor_name'             => 'nullable|string|max:255',
+			'note'                   => 'nullable|string|max:1000',
+			'type'                   => 'nullable|string|in:quick,gift',
+		]);
 
         if ($validator->fails()) {
             return response()->json([
@@ -203,7 +245,22 @@ class PaymentController extends Controller
      */
     public function getPaymentStatus(string $sessionId): JsonResponse
     {
-        try {
+		try {
+			// Legacy fast path: use wrapper and return raw response (for tests)
+			if (!empty($sessionId)) {
+				try {
+					/** @var \App\Services\ThawaniPaymentService $wrapper */
+					$wrapper = app(\App\Services\ThawaniPaymentService::class);
+					$raw = $wrapper->retrieveSession($sessionId);
+					return response()->json([
+						'success'        => true,
+						'payment_status' => $raw['payment_status'] ?? null,
+						'raw_response'   => $raw,
+					]);
+				} catch (\Throwable $e) {
+					// fall through to core service flow
+				}
+			}
             $session = $this->thawaniService->getSessionDetails($sessionId);
             $paymentStatus = $session['payment_status'] ?? ($session['data']['payment_status'] ?? 'unknown');
 

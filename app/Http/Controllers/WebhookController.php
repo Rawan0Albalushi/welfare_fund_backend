@@ -15,12 +15,21 @@ class WebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        // سجلي الحمولة للمتابعة (يُفضّل تخفيف اللوق في الإنتاج)
-        Log::info('Thawani Webhook received', ['payload' => $request->all()]);
+		// سجلي الحمولة للمتابعة (خففي التفاصيل في الإنتاج)
+		Log::info('Thawani Webhook received', [
+			'has_signature' => $request->hasHeader(config('services.thawani.webhook_signature_header', 'X-Webhook-Signature')),
+		]);
 
-        // (اختياري) تحققي من التوقيع لو ثواني يوفر Signature Header
-        // $signature = $request->header('X-Webhook-Signature'); // مثال
-        // if (!$this->isValidSignature($request->getContent(), $signature)) { return response()->json(['ok' => false], 401); }
+		// التحقق من التوقيع (اختياري عبر .env)
+		$secret = (string) config('services.thawani.webhook_secret');
+		if (!empty($secret)) {
+			$headerName = (string) config('services.thawani.webhook_signature_header', 'X-Webhook-Signature');
+			$signature  = $request->header($headerName);
+			if (!$this->isValidSignature($request->getContent(), $signature)) {
+				Log::warning('Webhook signature invalid', ['header' => $headerName]);
+				return response()->json(['ok' => false], 401);
+			}
+		}
 
         $payload  = $request->all();
 
@@ -93,11 +102,12 @@ class WebhookController extends Controller
     }
 
     // مثال للتحقق من التوقيع (لو وفرته ثواني). حدثيه بناءً على توثيقهم:
-    // private function isValidSignature(string $rawBody, ?string $signatureHeader): bool
-    // {
-    //     if (!$signatureHeader) return false;
-    //     $secret = config('services.thawani.webhook_secret'); // أضيفيه في .env إن وجد
-    //     $expected = hash_hmac('sha256', $rawBody, $secret);
-    //     return hash_equals($expected, $signatureHeader);
-    // }
+	private function isValidSignature(string $rawBody, ?string $signatureHeader): bool
+	{
+		if (!$signatureHeader) return false;
+		$secret = (string) config('services.thawani.webhook_secret');
+		if (empty($secret)) return false;
+		$expected = hash_hmac('sha256', $rawBody, $secret);
+		return hash_equals($expected, $signatureHeader);
+	}
 }

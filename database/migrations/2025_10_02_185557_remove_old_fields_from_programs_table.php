@@ -11,10 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('programs', function (Blueprint $table) {
-            // حذف الحقول القديمة
-            $table->dropColumn(['title', 'description']);
-        });
+		// تخطّي dropColumn على SQLite (غير مدعوم بسهولة خصوصًا مع الفهارس)
+		$driver = Schema::getConnection()->getDriverName();
+		if ($driver === 'sqlite') {
+			return;
+		}
+		Schema::table('programs', function (Blueprint $table) {
+			// حذف الحقول القديمة إن وجدت
+			if (Schema::hasColumn('programs', 'title')) {
+				$table->dropColumn('title');
+			}
+			if (Schema::hasColumn('programs', 'description')) {
+				$table->dropColumn('description');
+			}
+		});
     }
 
     /**

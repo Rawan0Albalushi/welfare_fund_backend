@@ -38,13 +38,20 @@ class ThawaniService
             // استخدام return_origin لإنشاء URLs ديناميكية
             $returnOrigin = $returnOrigin ?? null;
             
-            $successUrl = $returnOrigin ? 
-                rtrim($returnOrigin, '/') . '/payment/success' : 
-                'http://localhost:49887/payment/success';
-                
-            $cancelUrl = $returnOrigin ? 
-                rtrim($returnOrigin, '/') . '/payment/cancel' : 
-                'http://localhost:49887/payment/cancel';
+			// Frontend return URLs: prefer explicit returnOrigin, then FRONTEND_ORIGIN env, then localhost fallback
+			if ($returnOrigin) {
+				$successUrl = rtrim($returnOrigin, '/') . '/payment/success';
+				$cancelUrl  = rtrim($returnOrigin, '/') . '/payment/cancel';
+			} else {
+				$frontendOrigin = rtrim((string) env('FRONTEND_ORIGIN', ''), '/');
+				if ($frontendOrigin) {
+					$successUrl = $frontendOrigin . '/payment/success';
+					$cancelUrl  = $frontendOrigin . '/payment/cancel';
+				} else {
+					$successUrl = 'http://localhost:3000/payment/success';
+					$cancelUrl  = 'http://localhost:3000/payment/cancel';
+				}
+			}
 
             // بناء روابط النجاح والإلغاء مع تمرير origin في query parameters
             // استخدام APP_URL من الإعدادات (يجب ضبطه في .env)

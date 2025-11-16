@@ -4,7 +4,10 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
 Route::get('/', function () {
-    return view('welcome');
+    return response()->json([
+        'name' => 'Student Welfare Fund API',
+        'status' => 'ok',
+    ], 200);
 });
 
 /**

@@ -205,13 +205,15 @@ class DonationsService
      */
     public function checkDuplicateDonation(string $idempotencyKey): ?Donation
     {
-        $hash = Hash::make($idempotencyKey);
-        
-        // Check if we have a recent donation with this hash
-        $recentDonation = Donation::where('payload->idempotency_hash', $hash)
-            ->where('created_at', '>=', Carbon::now()->subMinutes(5))
-            ->first();
+		// Deterministic HMAC for stable matching
+		$hmac = hash_hmac('sha256', $idempotencyKey, (string) config('app.key'));
 
-        return $recentDonation;
+		// Look for any recent donation with matching HMAC or raw key (for future compatibility)
+		return Donation::where(function ($q) use ($hmac, $idempotencyKey) {
+				$q->where('payload->idempotency_hmac', $hmac)
+				  ->orWhere('payload->idempotency_key', $idempotencyKey);
+			})
+			->where('created_at', '>=', Carbon::now()->subMinutes(5))
+			->first();
     }
 }

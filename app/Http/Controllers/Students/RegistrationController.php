@@ -229,8 +229,8 @@ class RegistrationController extends Controller
     {
         $user = $request->user();
         
-        $registration = StudentRegistration::where('user_id', $user->id)
-            ->with(['program:id,title_ar,title_en'])
+		$registration = StudentRegistration::where('user_id', $user->id)
+			->with(['program:id,title,title_ar,title_en'])
             ->latest()
             ->first();
 

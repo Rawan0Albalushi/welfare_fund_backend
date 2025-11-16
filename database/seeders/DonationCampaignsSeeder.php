@@ -182,32 +182,42 @@ class DonationCampaignsSeeder extends Seeder
             ],
         ];
 
-        foreach ($campaigns as $campaignData) {
+		$hasLegacyTitle = \Schema::hasColumn('campaigns', 'title');
+		$hasLegacyDescription = \Schema::hasColumn('campaigns', 'description');
+		foreach ($campaigns as $campaignData) {
             $category = Category::where('name_ar', $campaignData['category_name_ar'])->first();
             
             if ($category) {
+				$payload = [
+					'category_id' => $category->id,
+					'title_ar' => $campaignData['title_ar'],
+					'title_en' => $campaignData['title_en'],
+					'description_ar' => $campaignData['description_ar'],
+					'description_en' => $campaignData['description_en'],
+					'image' => $campaignData['image'],
+					'goal_amount' => $campaignData['goal_amount'],
+					'raised_amount' => $campaignData['raised_amount'],
+					'status' => 'active',
+					'start_date' => $campaignData['start_date'],
+					'end_date' => $campaignData['end_date'],
+					'target_donors' => $campaignData['target_donors'],
+					'impact_description_ar' => $campaignData['impact_description_ar'],
+					'impact_description_en' => $campaignData['impact_description_en'],
+					'campaign_highlights' => $campaignData['campaign_highlights'],
+				];
+				// Legacy fallbacks for SQLite (columns not dropped)
+				if ($hasLegacyTitle && !isset($payload['title'])) {
+					$payload['title'] = $campaignData['title_en'] ?? $campaignData['title_ar'];
+				}
+				if ($hasLegacyDescription && !isset($payload['description'])) {
+					$payload['description'] = $campaignData['description_en'] ?? $campaignData['description_ar'] ?? '';
+				}
                 Campaign::firstOrCreate(
                     [
                         'title_ar' => $campaignData['title_ar'],
                         'category_id' => $category->id,
                     ],
-                    [
-                        'category_id' => $category->id,
-                        'title_ar' => $campaignData['title_ar'],
-                        'title_en' => $campaignData['title_en'],
-                        'description_ar' => $campaignData['description_ar'],
-                        'description_en' => $campaignData['description_en'],
-                        'image' => $campaignData['image'],
-                        'goal_amount' => $campaignData['goal_amount'],
-                        'raised_amount' => $campaignData['raised_amount'],
-                        'status' => 'active',
-                        'start_date' => $campaignData['start_date'],
-                        'end_date' => $campaignData['end_date'],
-                        'target_donors' => $campaignData['target_donors'],
-                        'impact_description_ar' => $campaignData['impact_description_ar'],
-                        'impact_description_en' => $campaignData['impact_description_en'],
-                        'campaign_highlights' => $campaignData['campaign_highlights'],
-                    ]
+					$payload
                 );
             }
         }

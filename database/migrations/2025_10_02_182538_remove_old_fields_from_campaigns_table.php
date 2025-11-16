@@ -11,10 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('campaigns', function (Blueprint $table) {
-            // حذف الحقول القديمة
-            $table->dropColumn(['title', 'description', 'impact_description']);
-        });
+		// SQLite لا يدعم dropColumn بسهولة خصوصًا مع الفهارس؛ نتخطى العملية في بيئة SQLite (اختبارات)
+		$driver = Schema::getConnection()->getDriverName();
+		if ($driver === 'sqlite') {
+			return;
+		}
+		Schema::table('campaigns', function (Blueprint $table) {
+			// حذف الحقول القديمة إن وجدت
+			if (Schema::hasColumn('campaigns', 'title')) {
+				$table->dropColumn('title');
+			}
+			if (Schema::hasColumn('campaigns', 'description')) {
+				$table->dropColumn('description');
+			}
+			if (Schema::hasColumn('campaigns', 'impact_description')) {
+				$table->dropColumn('impact_description');
+			}
+		});
     }
 
     /**

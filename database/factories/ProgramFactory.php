@@ -24,14 +24,27 @@ class ProgramFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            'title_ar' => $this->faker->words(3, true),
-            'title_en' => $this->faker->words(3, true),
-            'description_ar' => $this->faker->paragraph(),
-            'description_en' => $this->faker->paragraph(),
-            'image' => null,
-            'status' => $this->faker->randomElement(['draft', 'active', 'paused', 'archived']),
-        ];
+		$titleAr = $this->faker->words(3, true);
+		$titleEn = $this->faker->words(3, true);
+		$descAr  = $this->faker->paragraph();
+		$descEn  = $this->faker->paragraph();
+
+		$data = [
+			'title_ar' => $titleAr,
+			'title_en' => $titleEn,
+			'description_ar' => $descAr,
+			'description_en' => $descEn,
+			'image' => null,
+			'status' => $this->faker->randomElement(['draft', 'active', 'paused', 'archived']),
+		];
+		// Legacy fallbacks for SQLite tests when columns still exist
+		if (\Schema::hasColumn('programs', 'title')) {
+			$data['title'] = $titleEn;
+		}
+		if (\Schema::hasColumn('programs', 'description')) {
+			$data['description'] = $descEn;
+		}
+		return $data;
     }
 
     /**

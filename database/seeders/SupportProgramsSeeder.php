@@ -44,13 +44,22 @@ class SupportProgramsSeeder extends Seeder
             ],
         ];
 
-        // Create or update the programs
-        foreach ($supportPrograms as $programData) {
-            Program::updateOrCreate(
-                ['title_ar' => $programData['title_ar']],
-                $programData
-            );
-        }
+		// Create or update the programs (with legacy fallbacks for SQLite testing)
+		$hasLegacyTitle = \Schema::hasColumn('programs', 'title');
+		$hasLegacyDescription = \Schema::hasColumn('programs', 'description');
+		foreach ($supportPrograms as $programData) {
+			$payload = $programData;
+			if ($hasLegacyTitle && !isset($payload['title'])) {
+				$payload['title'] = $programData['title_en'] ?? $programData['title_ar'];
+			}
+			if ($hasLegacyDescription && !isset($payload['description'])) {
+				$payload['description'] = $programData['description_en'] ?? $programData['description_ar'] ?? '';
+			}
+			Program::updateOrCreate(
+				['title_ar' => $programData['title_ar']],
+				$payload
+			);
+		}
 
         $this->command->info('Support programs seeded successfully!');
     }

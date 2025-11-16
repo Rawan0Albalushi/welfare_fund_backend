@@ -193,12 +193,35 @@ class DonationController extends Controller
             'user_id' => $user?->id,
             'user_name' => $user?->name,
             'has_auth_header' => $request->hasHeader('Authorization'),
-            'auth_header' => $request->header('Authorization') ? 'present' : 'missing',
-            'auth_header_value' => $request->header('Authorization'),
+			'auth_header' => $request->header('Authorization') ? 'present' : 'missing',
+			'auth_header_value' => $request->hasHeader('Authorization') ? 'redacted' : null,
             'guard' => auth()->getDefaultDriver(),
             'check_auth' => auth()->check(),
             'current_user' => auth()->user()?->id
         ]);
+		// Idempotency (optional): prevent duplicate donations within a short window
+		$idempotencyKey = $request->header('Idempotency-Key');
+		if ($idempotencyKey) {
+			try {
+				/** @var \App\Services\DonationsService $donationsService */
+				$donationsService = app(\App\Services\DonationsService::class);
+				$duplicate = $donationsService->checkDuplicateDonation($idempotencyKey);
+				if ($duplicate) {
+					return response()->json([
+						'message' => 'Duplicate donation detected',
+						'data' => [
+							'donation' => $duplicate,
+							'payment_session' => $duplicate->payment_session_id ? [
+								'session_id' => $duplicate->payment_session_id,
+								'payment_url' => $duplicate->payment_url,
+							] : null,
+						],
+					], 200);
+				}
+			} catch (\Throwable $e) {
+				\Log::warning('Idempotency check failed', ['error' => $e->getMessage()]);
+			}
+		}
         $validator = Validator::make($request->all(), [
             'program_id' => 'nullable|integer|exists:programs,id',
             'campaign_id' => 'nullable|integer|exists:campaigns,id',
@@ -283,13 +306,16 @@ class DonationController extends Controller
             'all_input' => $request->all()
         ]);
         
-        $successUrl = $returnOrigin ? 
-            rtrim($returnOrigin, '/') . '/payment/success' : 
-            'http://localhost:59860/payment/success';
-            
-        $cancelUrl = $returnOrigin ? 
-            rtrim($returnOrigin, '/') . '/payment/cancel' : 
-            'http://localhost:59860/payment/cancel';
+		// Build frontend return URLs using return_origin or FRONTEND_ORIGIN env as fallback
+		$frontendOrigin = $returnOrigin ?: rtrim((string) env('FRONTEND_ORIGIN', ''), '/');
+		if ($frontendOrigin) {
+			$successUrl = rtrim($frontendOrigin, '/') . '/payment/success';
+			$cancelUrl  = rtrim($frontendOrigin, '/') . '/payment/cancel';
+		} else {
+			// Development fallback
+			$successUrl = 'http://localhost:3000/payment/success';
+			$cancelUrl  = 'http://localhost:3000/payment/cancel';
+		}
 
         \Log::info('DonationController URLs constructed', [
             'success_url' => $successUrl,
@@ -309,13 +335,21 @@ class DonationController extends Controller
                 ]
             ];
 
-            $paymentSession = $thawaniService->createSession(
+			$paymentSession = $thawaniService->createSession(
                 $donation, // تمرير كائن التبرع
                 $products,
                 $successUrl,
                 $cancelUrl,
                 $returnOrigin // تمرير return_origin
             );
+
+			// Persist idempotency markers into payload for future duplicate checks
+			if ($idempotencyKey) {
+				$payload = $donation->payload ?? [];
+				$payload['idempotency_key'] = $idempotencyKey;
+				$payload['idempotency_hmac'] = hash_hmac('sha256', $idempotencyKey, (string) config('app.key'));
+				$donation->update(['payload' => $payload]);
+			}
 
             return response()->json([
                 'message' => 'Donation and payment session created successfully',
@@ -453,21 +487,25 @@ class DonationController extends Controller
     {
         $user = $request->user();
         
+		$allowLegacyAnonymousAccess = filter_var(env('ANON_DONATION_LEGACY_ACCESS', true), FILTER_VALIDATE_BOOLEAN);
+		
         // البحث عن التبرع مع التحقق من ملكية المستخدم
-        $donation = Donation::where('id', $id)
-            ->where(function ($query) use ($user) {
-                $query->where('user_id', $user->id)
-                      ->orWhere(function ($q) use ($user) {
-                          $q->whereNull('user_id')
-                            ->whereJsonContains('payload->phone', $user->phone);
-                      })
-                     ->orWhere(function ($q) use ($user) {
-                         $q->whereNull('user_id')
-                           ->where('donor_name', $user->name);
-                     });
-           })
-           ->with(['program:id,title_ar,title_en', 'giftMeta', 'campaign:id,title_ar,title_en'])
-           ->first();
+		$donationQuery = Donation::where('id', $id)->where(function ($query) use ($user, $allowLegacyAnonymousAccess) {
+			$query->where('user_id', $user->id);
+			if ($allowLegacyAnonymousAccess) {
+				$query->orWhere(function ($q) use ($user) {
+					$q->whereNull('user_id')
+					  ->whereJsonContains('payload->phone', $user->phone);
+				})->orWhere(function ($q) use ($user) {
+					$q->whereNull('user_id')
+					  ->where('donor_name', $user->name);
+				});
+			}
+		});
+		
+		$donation = $donationQuery
+		   ->with(['program:id,title_ar,title_en', 'giftMeta', 'campaign:id,title_ar,title_en'])
+		   ->first();
 
         if (!$donation) {
             return response()->json([
@@ -583,9 +621,18 @@ class DonationController extends Controller
 
         // لا نقوم بتحديث raised_amount هنا؛ سيتم التحديث بعد تأكيد الدفع فقط عبر Webhook/فحص حالة الدفع
 
-        // Provide default URLs if not provided
-        $successUrl = $request->success_url ?? 'https://studentwelfarefund.com/payment/success';
-        $cancelUrl = $request->cancel_url ?? 'https://studentwelfarefund.com/payment/cancel';
+		// Provide default URLs (prefer explicit request, then FRONTEND_ORIGIN env)
+		$frontendOrigin = rtrim((string) ($request->input('return_origin') ?: env('FRONTEND_ORIGIN', '')), '/');
+		if ($request->filled('success_url') && $request->filled('cancel_url')) {
+			$successUrl = $request->success_url;
+			$cancelUrl  = $request->cancel_url;
+		} elseif ($frontendOrigin) {
+			$successUrl = $frontendOrigin . '/payment/success';
+			$cancelUrl  = $frontendOrigin . '/payment/cancel';
+		} else {
+			$successUrl = 'http://localhost:3000/payment/success';
+			$cancelUrl  = 'http://localhost:3000/payment/cancel';
+		}
 
         // إنشاء جلسة الدفع
         try {

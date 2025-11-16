@@ -41,6 +41,8 @@ return [
         'base_url'   => env('THAWANI_BASE_URL', 'https://uatcheckout.thawani.om/api/v1'),
         'success_url' => env('THAWANI_SUCCESS_URL', 'http://localhost:8000/payment/bridge/success'),
         'cancel_url' => env('THAWANI_CANCEL_URL', 'http://localhost:8000/payment/bridge/cancel'),
+		'webhook_secret' => env('THAWANI_WEBHOOK_SECRET'),
+		'webhook_signature_header' => env('THAWANI_WEBHOOK_SIGNATURE_HEADER', 'X-Webhook-Signature'),
     ],
 
 ];
