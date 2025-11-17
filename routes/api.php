@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Public\CatalogController;
 use App\Http\Controllers\Public\CampaignController;
+use App\Http\Controllers\Public\BannerController as PublicBannerController;
 use App\Http\Controllers\Public\DonationController;
 use App\Http\Controllers\Donations\DonationController as LegacyDonationController;
 use App\Http\Controllers\PaymentController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Me\DonationsController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
 use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
+use App\Http\Controllers\Admin\BannerController as AdminBannerController;
 use App\Http\Controllers\Admin\DonationController as AdminDonationController;
 use App\Http\Controllers\Admin\ApplicationController as AdminApplicationController;
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
@@ -66,6 +68,11 @@ Route::prefix('v1')->group(function () {
     Route::get('/campaigns/urgent', [CampaignController::class, 'urgent']);
     Route::get('/campaigns/featured', [CampaignController::class, 'featured']);
     Route::get('/campaigns/{id}', [CampaignController::class, 'show']);
+
+    // Public banner endpoints
+    Route::get('/banners', [PublicBannerController::class, 'index']);
+    Route::get('/banners/featured', [PublicBannerController::class, 'featured']);
+    Route::get('/banners/{id}', [PublicBannerController::class, 'show']);
 
     // Public donation endpoints (allow anonymous donations)
     Route::post('/donations/with-payment', [DonationController::class, 'storeWithPayment']); // للتبرعات مع دفع (مسجل أو مجهول)
@@ -166,6 +173,14 @@ Route::prefix('v1')->group(function () {
         Route::put('/campaigns/{id}', [AdminCampaignController::class, 'update']);
         Route::delete('/campaigns/{id}', [AdminCampaignController::class, 'destroy']);
         Route::post('/upload/image', [AdminCampaignController::class, 'uploadImage']);
+
+        // Banners CRUD
+        Route::get('/banners', [AdminBannerController::class, 'index']);
+        Route::post('/banners', [AdminBannerController::class, 'store']);
+        Route::get('/banners/{id}', [AdminBannerController::class, 'show']);
+        Route::put('/banners/{id}', [AdminBannerController::class, 'update']);
+        Route::delete('/banners/{id}', [AdminBannerController::class, 'destroy']);
+        Route::post('/banners/upload/image', [AdminBannerController::class, 'uploadImage']);
 
         // Donations listing
         Route::get('/donations', [AdminDonationController::class, 'index']);
