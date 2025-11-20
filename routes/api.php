@@ -94,20 +94,26 @@ Route::prefix('v1')->group(function () {
     Route::post('/payments/webhook', [LegacyDonationController::class, 'webhook']);
 
     // Payment endpoints (Thawani) - New structured endpoints
-    Route::post('/payments/create', [PaymentsController::class, 'create']);
-    Route::post('/payments/confirm', [PaymentsController::class, 'confirm']);
-
-    // Legacy payment endpoints (for backward compatibility)
-    Route::post('/payments/create-legacy', [PaymentController::class, 'createPayment']);
-    Route::get('/payments/status/{sessionId}', [PaymentController::class, 'getPaymentStatus']);
-    Route::get('/payments', [PaymentController::class, 'index']); // ?session_id=...
+    // Rate limiting: 20 requests per minute for payment creation, 60 for status checks
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('/payments/create', [PaymentsController::class, 'create']);
+        Route::post('/payments/confirm', [PaymentsController::class, 'confirm']);
+        Route::post('/payments/create-legacy', [PaymentController::class, 'createPayment']);
+    });
+    
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/payments/mobile/success', [PaymentsController::class, 'mobileSuccess']);
+        Route::get('/payments/status/{sessionId}', [PaymentController::class, 'getPaymentStatus']);
+        Route::get('/payments', [PaymentController::class, 'index']); // ?session_id=...
+    });
 
     // Success/Cancel display pages used by Thawani redirects (عرض فقط)
     Route::get('/payments/success', [PaymentController::class, 'paymentSuccess']);
     Route::get('/payments/cancel',  [PaymentController::class, 'paymentCancel']);
 
     // Webhook (Thawani) - سجّلي هذا المسار في لوحة ثواني
-    Route::post('/payments/webhook/thawani', [WebhookController::class, 'handle']);
+    // Rate limiting أعلى للويبهوك لأنها تأتي من ثواني (100 requests per minute)
+    Route::middleware('throttle:100,1')->post('/payments/webhook/thawani', [WebhookController::class, 'handle']);
 
     // Student registration routes (v1 prefix for frontend compatibility)
     Route::middleware('auth:sanctum')->prefix('students/registration')->group(function () {

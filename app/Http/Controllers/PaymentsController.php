@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Donation;
 use App\Services\ThawaniService;
+use App\Helpers\PaymentSecurityHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -136,12 +137,25 @@ class PaymentsController extends Controller
 
             DB::beginTransaction();
 
-            // مراقبة return_origin المستلم
-            $returnOrigin = $request->input('return_origin');
-            \Log::info('Payment creation request', [
+            // التحقق من return_origin باستخدام قائمة بيضاء
+            $returnOrigin = null;
+            try {
+                $inputOrigin = $request->input('return_origin');
+                if ($inputOrigin) {
+                    $returnOrigin = PaymentSecurityHelper::validateReturnOrigin($inputOrigin);
+                }
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid return_origin: ' . $e->getMessage()
+                ], 400);
+            }
+
+            // تسجيل محدود (بدون بيانات حساسة)
+            Log::info('Payment creation request', [
                 'donation_id' => $request->donation_id,
-                'return_origin' => $returnOrigin,
-                'all_input' => $request->all()
+                'return_origin_sanitized' => $returnOrigin ? PaymentSecurityHelper::sanitizeUrlForLogging($returnOrigin) : null,
             ]);
 
             // إنشاء جلسة الدفع مع تمرير return_origin
@@ -282,55 +296,111 @@ class PaymentsController extends Controller
     public function bridgeSuccess(Request $request)
     {
         $donationId = $request->query('donation_id');
-        $origin = $request->query('origin', 'http://localhost:49887/payment/success'); // fallback
+        $originInput = $request->query('origin');
         
-        \Log::info('Bridge Success called', [
+        // التحقق من origin باستخدام قائمة بيضاء
+        $origin = null;
+        try {
+            if ($originInput) {
+                $origin = PaymentSecurityHelper::validateReturnOrigin($originInput);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Bridge Success: Invalid origin', [
+                'donation_id' => $donationId,
+                'origin_input' => $originInput ? PaymentSecurityHelper::sanitizeUrlForLogging($originInput) : null,
+                'error' => $e->getMessage()
+            ]);
+            // استخدام URL آمن افتراضي
+            $defaultOrigin = env('FRONTEND_ORIGIN', 'http://localhost:3000');
+            $origin = $defaultOrigin . '/payment/success';
+        }
+
+        // Fallback آمن
+        if (!$origin) {
+            $defaultOrigin = env('FRONTEND_ORIGIN', 'http://localhost:3000');
+            $origin = $defaultOrigin . '/payment/success';
+        }
+        
+        Log::info('Bridge Success called', [
             'donation_id' => $donationId,
-            'origin' => $origin,
-            'all_params' => $request->query()
+            'origin_sanitized' => PaymentSecurityHelper::sanitizeUrlForLogging($origin),
         ]);
         
         if (!$donationId) {
-            $errorUrl = str_replace('/payment/success', '/payment/error', $origin) . '?message=' . urlencode('Donation ID is required');
+            $errorUrl = rtrim($origin, '/') . '?status=error&message=' . urlencode('Donation ID is required');
             return redirect()->away($errorUrl);
         }
 
         $donation = Donation::where('donation_id', $donationId)->first();
         
         if (!$donation) {
-            $errorUrl = str_replace('/payment/success', '/payment/error', $origin) . '?message=' . urlencode('Donation not found');
+            $errorUrl = rtrim($origin, '/') . '?status=error&message=' . urlencode('Donation not found');
             return redirect()->away($errorUrl);
         }
 
-        // تأكيد الحالة من ثواني (idempotent)
+        // تأكيد الحالة من ثواني (idempotent) مع معالجة Race Conditions
         if ($donation->status !== 'paid' && $donation->payment_session_id) {
             try {
-                $sessionDetails = $this->thawaniService->getSessionDetails($donation->payment_session_id);
-                $paymentStatus = $sessionDetails['payment_status'] ?? null;
+                DB::beginTransaction();
                 
-                if ($paymentStatus === 'paid') {
-                    // تحويل المبلغ من بيسة إلى ريال عماني
-                    $capturedAmount = $sessionDetails['captured_amount'] ?? $sessionDetails['total_amount'] ?? 0;
-                    $paidAmount = $capturedAmount / 1000; // بيسة -> ريال
+                // إعادة جلب التبرع مع lock لتجنب Race Conditions
+                $donation = Donation::where('donation_id', $donationId)
+                    ->lockForUpdate()
+                    ->first();
+                
+                // التحقق مرة أخرى بعد lock
+                if ($donation->status === 'paid') {
+                    DB::commit();
+                } else {
+                    $sessionDetails = $this->thawaniService->getSessionDetails($donation->payment_session_id);
+                    $paymentStatus = $sessionDetails['payment_status'] ?? null;
                     
-                    $donation->update([
-                        'status' => 'paid',
-                        'paid_amount' => $paidAmount,
-                        'paid_at' => isset($sessionDetails['paid_at']) 
-                            ? \Carbon\Carbon::parse($sessionDetails['paid_at'])->setTimezone(config('app.timezone'))
-                            : now(),
-                        'payload' => $sessionDetails,
-                    ]);
+                    if ($paymentStatus === 'paid') {
+                        // تحويل المبلغ من بيسة إلى ريال عماني
+                        $capturedAmount = $sessionDetails['captured_amount'] ?? $sessionDetails['total_amount'] ?? 0;
+                        $paidAmount = $capturedAmount / 1000; // بيسة -> ريال
+                        
+                        // التحقق من تطابق المبلغ (مع هامش خطأ 1%)
+                        $expectedAmountBaisa = (int)($donation->amount * 1000);
+                        $actualAmountBaisa = (int)$capturedAmount;
+                        $tolerance = max(100, (int)($expectedAmountBaisa * 0.01)); // 1% أو 100 بيسة كحد أدنى
+                        
+                        if (abs($actualAmountBaisa - $expectedAmountBaisa) > $tolerance) {
+                            Log::warning('Payment amount mismatch detected', [
+                                'donation_id' => $donationId,
+                                'expected' => $expectedAmountBaisa,
+                                'actual' => $actualAmountBaisa,
+                                'difference' => abs($actualAmountBaisa - $expectedAmountBaisa),
+                            ]);
+                            // نستخدم المبلغ الفعلي المدفوع
+                        }
+                        
+                        $donation->update([
+                            'status' => 'paid',
+                            'paid_amount' => $paidAmount,
+                            'paid_at' => isset($sessionDetails['paid_at']) 
+                                ? \Carbon\Carbon::parse($sessionDetails['paid_at'])->setTimezone(config('app.timezone'))
+                                : now(),
+                            'payload' => $sessionDetails,
+                        ]);
 
-                    if ($donation->campaign_id) {
-                        $donation->campaign()
-                            ->where('id', $donation->campaign_id)
-                            ->increment('raised_amount', $paidAmount);
+                        // تحديث مبلغ الحملة باستخدام lock
+                        if ($donation->campaign_id) {
+                            \App\Models\Campaign::where('id', $donation->campaign_id)
+                                ->lockForUpdate()
+                                ->increment('raised_amount', $paidAmount);
+                        }
+                        
+                        DB::commit();
+                    } elseif ($paymentStatus === 'canceled') {
+                        $donation->update(['status' => 'canceled']);
+                        DB::commit();
+                    } else {
+                        DB::rollBack();
                     }
-                } elseif ($paymentStatus === 'canceled') {
-                    $donation->update(['status' => 'canceled']);
                 }
             } catch (\Exception $e) {
+                DB::rollBack();
                 Log::error('Failed to confirm payment status in bridge', [
                     'donation_id' => $donationId,
                     'error' => $e->getMessage()
@@ -348,14 +418,13 @@ class PaymentsController extends Controller
             'paid_amount' => $donation->paid_amount ?? $donation->amount,
         ];
         
-        $redirectUrl = $origin . '?' . http_build_query($queryParams);
+        $redirectUrl = rtrim($origin, '/') . '?' . http_build_query($queryParams);
         
-        \Log::info('Bridge Success redirecting', [
-            'redirect_url' => $redirectUrl,
+        Log::info('Bridge Success redirecting', [
+            'redirect_url_sanitized' => PaymentSecurityHelper::sanitizeUrlForLogging($redirectUrl),
             'donation_id' => $donationId,
             'amount' => $donation->amount,
             'paid_amount' => $donation->paid_amount ?? $donation->amount,
-            'origin' => $origin
         ]);
         
         return redirect()->away($redirectUrl);
@@ -367,12 +436,34 @@ class PaymentsController extends Controller
     public function bridgeCancel(Request $request)
     {
         $donationId = $request->query('donation_id');
-        $origin = $request->query('origin', 'http://localhost:49887/payment/cancel'); // fallback
+        $originInput = $request->query('origin');
         
-        \Log::info('Bridge Cancel called', [
+        // التحقق من origin باستخدام قائمة بيضاء
+        $origin = null;
+        try {
+            if ($originInput) {
+                $origin = PaymentSecurityHelper::validateReturnOrigin($originInput);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Bridge Cancel: Invalid origin', [
+                'donation_id' => $donationId,
+                'origin_input' => $originInput ? PaymentSecurityHelper::sanitizeUrlForLogging($originInput) : null,
+                'error' => $e->getMessage()
+            ]);
+            // استخدام URL آمن افتراضي
+            $defaultOrigin = env('FRONTEND_ORIGIN', 'http://localhost:3000');
+            $origin = $defaultOrigin . '/payment/cancel';
+        }
+
+        // Fallback آمن
+        if (!$origin) {
+            $defaultOrigin = env('FRONTEND_ORIGIN', 'http://localhost:3000');
+            $origin = $defaultOrigin . '/payment/cancel';
+        }
+        
+        Log::info('Bridge Cancel called', [
             'donation_id' => $donationId,
-            'origin' => $origin,
-            'all_params' => $request->query()
+            'origin_sanitized' => PaymentSecurityHelper::sanitizeUrlForLogging($origin),
         ]);
         
         // البحث عن التبرع لتمرير تفاصيله
@@ -393,15 +484,171 @@ class PaymentsController extends Controller
             $queryParams['donor_name'] = $donation->donor_name;
         }
         
-        $redirectUrl = $origin . '?' . http_build_query($queryParams);
+        $redirectUrl = rtrim($origin, '/') . '?' . http_build_query($queryParams);
         
-        \Log::info('Bridge Cancel redirecting', [
-            'redirect_url' => $redirectUrl,
+        Log::info('Bridge Cancel redirecting', [
+            'redirect_url_sanitized' => PaymentSecurityHelper::sanitizeUrlForLogging($redirectUrl),
             'donation_id' => $donationId,
             'amount' => $donation?->amount,
-            'origin' => $origin
         ]);
         
         return redirect()->away($redirectUrl);
+    }
+
+    /**
+     * نجاح الدفع للموبايل
+     * 
+     * @OA\Get(
+     *     path="/api/v1/payments/mobile/success",
+     *     summary="نجاح الدفع للموبايل",
+     *     tags={"Payments"},
+     *     @OA\Parameter(
+     *         name="donation_id",
+     *         in="query",
+     *         required=true,
+     *         description="معرف التبرع",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="session_id",
+     *         in="query",
+     *         required=false,
+     *         description="معرف جلسة الدفع (اختياري - سيتم استخدام payment_session_id من التبرع إذا لم يتم تمريره)",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="تم استرجاع معلومات الدفع بنجاح",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="donation_id", type="string"),
+     *             @OA\Property(property="session_id", type="string"),
+     *             @OA\Property(property="amount", type="number", format="float"),
+     *             @OA\Property(property="campaign_title", type="string", nullable=true)
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="التبرع غير موجود")
+     * )
+     */
+    public function mobileSuccess(Request $request): JsonResponse
+    {
+        $donationId = $request->query('donation_id');
+        $sessionId = $request->query('session_id');
+
+        if (!$donationId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'donation_id is required'
+            ], 400);
+        }
+
+        // جلب التبرع مع العلاقات
+        $donation = Donation::with('campaign')->where('donation_id', $donationId)->first();
+
+        if (!$donation) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Donation not found'
+            ], 404);
+        }
+
+        // استخدام session_id من query parameters أو من التبرع
+        $actualSessionId = $sessionId ?? $donation->payment_session_id;
+
+        // إذا كان لدينا session_id، تأكد من حالة الدفع من ثواني وتحديث قاعدة البيانات
+        if ($actualSessionId) {
+            try {
+                // التحقق من حالة الدفع من ثواني (idempotent)
+                if ($donation->status !== 'paid' && $donation->payment_session_id) {
+                    $sessionDetails = $this->thawaniService->getSessionDetails($donation->payment_session_id);
+                    $paymentStatus = $sessionDetails['payment_status'] ?? null;
+                    
+                    if ($paymentStatus === 'paid') {
+                        // تحويل المبلغ من بيسة إلى ريال عماني
+                        $capturedAmount = $sessionDetails['captured_amount'] ?? $sessionDetails['total_amount'] ?? 0;
+                        $paidAmount = $capturedAmount / 1000; // بيسة -> ريال
+                        
+                        // التحقق من تطابق المبلغ (مع هامش خطأ 1%)
+                        $expectedAmountBaisa = (int)($donation->amount * 1000);
+                        $actualAmountBaisa = (int)$capturedAmount;
+                        $tolerance = max(100, (int)($expectedAmountBaisa * 0.01)); // 1% أو 100 بيسة كحد أدنى
+                        
+                        if (abs($actualAmountBaisa - $expectedAmountBaisa) > $tolerance) {
+                            Log::warning('Mobile success: Payment amount mismatch', [
+                                'donation_id' => $donationId,
+                                'expected' => $expectedAmountBaisa,
+                                'actual' => $actualAmountBaisa,
+                                'difference' => abs($actualAmountBaisa - $expectedAmountBaisa),
+                            ]);
+                        }
+                        
+                        DB::beginTransaction();
+                        
+                        // إعادة جلب التبرع مع lock لتجنب Race Conditions
+                        $donation = Donation::where('donation_id', $donationId)
+                            ->lockForUpdate()
+                            ->first();
+                        
+                        // التحقق مرة أخرى بعد lock
+                        if ($donation->status === 'paid') {
+                            DB::commit();
+                        } else {
+                            $donation->update([
+                                'status' => 'paid',
+                                'paid_amount' => $paidAmount,
+                                'paid_at' => isset($sessionDetails['paid_at']) 
+                                    ? \Carbon\Carbon::parse($sessionDetails['paid_at'])->setTimezone(config('app.timezone'))
+                                    : now(),
+                                'payload' => $sessionDetails,
+                            ]);
+
+                            // تحديث مبلغ الحملة مع lock
+                            if ($donation->campaign_id) {
+                                \App\Models\Campaign::where('id', $donation->campaign_id)
+                                    ->lockForUpdate()
+                                    ->increment('raised_amount', $paidAmount);
+                            }
+                            
+                            DB::commit();
+                            
+                            Log::info('Mobile success: Payment confirmed and donation updated', [
+                                'donation_id' => $donationId,
+                                'session_id' => $actualSessionId,
+                            ]);
+                        }
+                    } elseif ($paymentStatus === 'canceled') {
+                        $donation->update(['status' => 'canceled']);
+                        Log::info('Mobile success: Payment was canceled', [
+                            'donation_id' => $donationId,
+                            'session_id' => $actualSessionId
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Mobile success: Failed to confirm payment status', [
+                    'donation_id' => $donationId,
+                    'session_id' => $actualSessionId,
+                    'error' => $e->getMessage()
+                ]);
+                // نستمر في إرجاع البيانات حتى لو فشل التحقق
+            }
+        }
+
+        // إعادة جلب التبرع للحصول على البيانات المحدثة
+        $donation->refresh();
+
+        // جلب معلومات الحملة إذا كانت موجودة
+        $campaignTitle = null;
+        if ($donation->campaign_id && $donation->campaign) {
+            $campaignTitle = $donation->campaign->title;
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'donation_id' => $donation->donation_id,
+            'session_id' => $actualSessionId,
+            'amount' => (float) $donation->amount,
+            'campaign_title' => $campaignTitle,
+        ]);
     }
 }

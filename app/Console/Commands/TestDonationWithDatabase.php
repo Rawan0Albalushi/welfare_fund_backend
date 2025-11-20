@@ -84,7 +84,7 @@ class TestDonationWithDatabase extends Command
                 $this->info("Using Campaign ID: {$campaigns->first()->id}");
             }
 
-            $response = Http::post('http://localhost:8000/api/v1/payments/create', $payload);
+            $response = Http::post('http://192.168.1.15:8000/api/v1/payments/create', $payload);
 
             if ($response->successful()) {
                 $data = $response->json();
@@ -129,7 +129,7 @@ class TestDonationWithDatabase extends Command
                 // Step 4: Check payment status
                 $this->info("\n📊 Checking payment status...");
                 $sessionId = $data['session_id'];
-                $statusResponse = Http::get("http://localhost:8000/api/v1/payments/status/{$sessionId}");
+                $statusResponse = Http::get("http://192.168.1.15:8000/api/v1/payments/status/{$sessionId}");
                 
                 if ($statusResponse->successful()) {
                     $statusData = $statusResponse->json();

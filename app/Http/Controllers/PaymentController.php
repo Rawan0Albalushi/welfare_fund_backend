@@ -6,6 +6,7 @@ use App\Services\ThawaniService;
 use App\Models\Donation;
 use App\Models\Program;
 use App\Models\Campaign;
+use App\Helpers\PaymentSecurityHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -147,7 +148,15 @@ class PaymentController extends Controller
             ], 400);
         }
 
-        $returnOrigin = rtrim($request->input('return_origin'), '/');
+        // التحقق من return_origin باستخدام قائمة بيضاء
+        try {
+            $returnOrigin = PaymentSecurityHelper::validateReturnOrigin($request->input('return_origin'));
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid return_origin: ' . $e->getMessage()
+            ], 400);
+        }
 
         // Either program_id or campaign_id must exist
         if (!$request->has('program_id') && !$request->has('campaign_id')) {
@@ -268,15 +277,34 @@ class PaymentController extends Controller
 
             if ($donation) {
                 if ($paymentStatus === 'paid' && $donation->status !== 'paid') {
-                    DB::transaction(function () use ($donation) {
+                    DB::transaction(function () use ($donation, $session) {
+                        // إعادة جلب التبرع مع lock لتجنب Race Conditions
+                        $donation = Donation::where('payment_session_id', $donation->payment_session_id)
+                            ->lockForUpdate()
+                            ->first();
+                        
+                        // التحقق مرة أخرى بعد lock
+                        if ($donation->status === 'paid') {
+                            return;
+                        }
+                        
+                        // استخدام المبلغ الفعلي من session إن وجد
+                        $paidAmount = $donation->amount;
+                        if (isset($session['captured_amount']) || isset($session['total_amount'])) {
+                            $capturedAmount = $session['captured_amount'] ?? $session['total_amount'] ?? 0;
+                            $paidAmount = $capturedAmount / 1000; // بيسة -> ريال
+                        }
+                        
                         $donation->update([
                             'status'      => 'paid',
-                            'paid_amount' => $donation->amount,
+                            'paid_amount' => $paidAmount,
                         ]);
 
+                        // تحديث مبلغ الحملة مع lock
                         if ($donation->campaign_id) {
                             Campaign::where('id', $donation->campaign_id)
-                                ->increment('raised_amount', $donation->amount);
+                                ->lockForUpdate()
+                                ->increment('raised_amount', $paidAmount);
                         }
                     });
                 } elseif (in_array($paymentStatus, ['cancelled', 'canceled', 'failed'])) {

@@ -461,9 +461,9 @@ class DonationController extends Controller
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
-     *         description="Donation ID",
+     *         description="Donation ID (integer ID or UUID donation_id like DN_xxx)",
      *         required=true,
-     *         @OA\Schema(type="integer")
+     *         @OA\Schema(type="string")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -483,14 +483,22 @@ class DonationController extends Controller
      *     )
      * )
      */
-    public function show(Request $request, int $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
         
 		$allowLegacyAnonymousAccess = filter_var(env('ANON_DONATION_LEGACY_ACCESS', true), FILTER_VALIDATE_BOOLEAN);
 		
-        // البحث عن التبرع مع التحقق من ملكية المستخدم
-		$donationQuery = Donation::where('id', $id)->where(function ($query) use ($user, $allowLegacyAnonymousAccess) {
+        // البحث عن التبرع - يدعم كلاً من id (int) و donation_id (UUID string)
+		$donationQuery = Donation::where(function ($query) use ($id) {
+			// إذا كان رقم، ابحث عن id
+			if (is_numeric($id)) {
+				$query->where('id', (int) $id);
+			} else {
+				// إذا كان string (UUID)، ابحث عن donation_id
+				$query->where('donation_id', $id);
+			}
+		})->where(function ($query) use ($user, $allowLegacyAnonymousAccess) {
 			$query->where('user_id', $user->id);
 			if ($allowLegacyAnonymousAccess) {
 				$query->orWhere(function ($q) use ($user) {

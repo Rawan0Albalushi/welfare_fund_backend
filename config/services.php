@@ -39,8 +39,9 @@ return [
         'secret_key' => env('THAWANI_SECRET_KEY'),
         'publishable_key' => env('THAWANI_PUBLISHABLE_KEY'),
         'base_url'   => env('THAWANI_BASE_URL', 'https://uatcheckout.thawani.om/api/v1'),
-        'success_url' => env('THAWANI_SUCCESS_URL', 'http://localhost:8000/payment/bridge/success'),
-        'cancel_url' => env('THAWANI_CANCEL_URL', 'http://localhost:8000/payment/bridge/cancel'),
+        // استخدام config('app.url') بدلاً من IPs مكودة
+        'success_url' => env('THAWANI_SUCCESS_URL', null),
+        'cancel_url' => env('THAWANI_CANCEL_URL', null),
 		'webhook_secret' => env('THAWANI_WEBHOOK_SECRET'),
 		'webhook_signature_header' => env('THAWANI_WEBHOOK_SIGNATURE_HEADER', 'X-Webhook-Signature'),
     ],

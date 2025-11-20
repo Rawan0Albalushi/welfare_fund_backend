@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Helpers\PaymentSecurityHelper;
 use Exception;
 
 class ThawaniService
@@ -48,30 +49,33 @@ class ThawaniService
 					$successUrl = $frontendOrigin . '/payment/success';
 					$cancelUrl  = $frontendOrigin . '/payment/cancel';
 				} else {
-					$successUrl = 'http://localhost:3000/payment/success';
-					$cancelUrl  = 'http://localhost:3000/payment/cancel';
+					// Fallback للتطوير فقط
+					if (app()->environment(['local', 'development'])) {
+						$successUrl = 'http://localhost:3000/payment/success';
+						$cancelUrl  = 'http://localhost:3000/payment/cancel';
+					} else {
+						throw new Exception('FRONTEND_ORIGIN must be configured in production');
+					}
 				}
 			}
 
-            // بناء روابط النجاح والإلغاء مع تمرير origin في query parameters
-            // استخدام APP_URL من الإعدادات (يجب ضبطه في .env)
-            $baseUrl = rtrim(config('app.url', 'http://localhost:8000'), '/');
+            // بناء روابط النجاح والإلغاء للموبايل
+            // استخدام config('app.url') بدلاً من IP مكود
+            $baseUrl = rtrim(config('app.url', 'http://192.168.1.15:8000'), '/');
             
-            // إضافة البورت تلقائياً إذا كان localhost بدون بورت
-            if (parse_url($baseUrl, PHP_URL_HOST) === 'localhost' && !parse_url($baseUrl, PHP_URL_PORT)) {
-                $baseUrl = 'http://localhost:8000';
-            }
+            // بناء success_url للموبايل مع donation_id
+            // Thawani سيقوم تلقائياً بإلحاق session_id عند إعادة التوجيه
+            $mobileSuccessUrl = "{$baseUrl}/api/v1/payments/mobile/success?donation_id={$donation->donation_id}";
             
-            $success = "{$baseUrl}/payment/bridge/success?donation_id={$donation->donation_id}&origin=" . urlencode($successUrl);
+            // بناء cancel URL مع origin محمي
             $cancel = "{$baseUrl}/payment/bridge/cancel?donation_id={$donation->donation_id}&origin=" . urlencode($cancelUrl);
 
-            \Log::info('THAWANI createSession payload', [
-                'success_url' => $success,
-                'cancel_url'  => $cancel,
+            Log::info('THAWANI createSession payload', [
+                'success_url' => PaymentSecurityHelper::sanitizeUrlForLogging($mobileSuccessUrl),
+                'cancel_url'  => PaymentSecurityHelper::sanitizeUrlForLogging($cancel),
                 'client_reference_id' => $donation->donation_id,
-                'return_origin' => $returnOrigin,
-                'success_url_frontend' => $successUrl,
-                'cancel_url_frontend' => $cancelUrl,
+                'return_origin_sanitized' => $returnOrigin ? PaymentSecurityHelper::sanitizeUrlForLogging($returnOrigin) : null,
+                'cancel_url_frontend_sanitized' => PaymentSecurityHelper::sanitizeUrlForLogging($cancelUrl),
             ]);
 
             $payload = [
@@ -84,7 +88,7 @@ class ThawaniService
                         'unit_amount' => (int) $p['unit_amount'], // بيسة
                     ];
                 }, $products),
-                'success_url' => $success,
+                'success_url' => $mobileSuccessUrl,
                 'cancel_url'  => $cancel,
                 'metadata'    => [
                     'donation_db_id' => $donation->id
@@ -229,6 +233,22 @@ class ThawaniService
                 $capturedAmount = $sessionDetails['captured_amount'] ?? $sessionDetails['total_amount'] ?? 0;
                 $paidAmount = $capturedAmount / 1000; // بيسة -> ريال
                 
+                // التحقق من تطابق المبلغ مع مبلغ التبرع المحفوظ
+                $expectedAmountBaisa = (int)($donation->amount * 1000);
+                $actualAmountBaisa = (int)$capturedAmount;
+                $tolerance = max(100, (int)($expectedAmountBaisa * 0.01)); // 1% أو 100 بيسة كحد أدنى
+                
+                if (abs($actualAmountBaisa - $expectedAmountBaisa) > $tolerance) {
+                    Log::warning('Payment amount mismatch in confirmPayment', [
+                        'donation_id' => $donation->donation_id,
+                        'session_id' => $sessionId,
+                        'expected' => $expectedAmountBaisa,
+                        'actual' => $actualAmountBaisa,
+                        'difference' => abs($actualAmountBaisa - $expectedAmountBaisa),
+                    ]);
+                    // نستخدم المبلغ الفعلي المدفوع لكن نسجل التحذير
+                }
+                
                 $updateData = array_merge($updateData, [
                     'status' => 'paid',
                     'paid_amount' => $paidAmount,
@@ -249,13 +269,14 @@ class ThawaniService
 
             $donation->update($updateData);
 
+            // تحديث مبلغ الحملة مع lock لتجنب Race Conditions
             if (
                 ($updateData['status'] ?? null) === 'paid' &&
                 $donation->campaign_id
             ) {
                 $incrementAmount = $updateData['paid_amount'] ?? $donation->amount;
-                $donation->campaign()
-                    ->where('id', $donation->campaign_id)
+                \App\Models\Campaign::where('id', $donation->campaign_id)
+                    ->lockForUpdate()
                     ->increment('raised_amount', $incrementAmount);
             }
 
