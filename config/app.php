@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://192.168.1.15:8000'),
+    'url' => env('APP_URL', 'http://localhost:8000'),
 
 
     /*

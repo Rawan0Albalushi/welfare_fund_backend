@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             // CharityProgramsSeeder::class,  // Disabled - only using SupportProgramsSeeder
             DonationCampaignsSeeder::class,
             AdminUserSeeder::class,
+            StudentRegistrationCardSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();

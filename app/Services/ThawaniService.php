@@ -61,7 +61,7 @@ class ThawaniService
 
             // بناء روابط النجاح والإلغاء للموبايل
             // استخدام config('app.url') بدلاً من IP مكود
-            $baseUrl = rtrim(config('app.url', 'http://192.168.1.15:8000'), '/');
+            $baseUrl = rtrim(config('app.url', 'http://localhost:8000'), '/');
             
             // بناء success_url للموبايل مع donation_id
             // Thawani سيقوم تلقائياً بإلحاق session_id عند إعادة التوجيه

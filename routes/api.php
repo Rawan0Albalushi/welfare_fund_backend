@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Public\CatalogController;
 use App\Http\Controllers\Public\CampaignController;
 use App\Http\Controllers\Public\BannerController as PublicBannerController;
+use App\Http\Controllers\Public\StudentRegistrationCardController as PublicStudentRegistrationCardController;
 use App\Http\Controllers\Public\DonationController;
 use App\Http\Controllers\Donations\DonationController as LegacyDonationController;
 use App\Http\Controllers\PaymentController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
 use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
 use App\Http\Controllers\Admin\BannerController as AdminBannerController;
+use App\Http\Controllers\Admin\StudentRegistrationCardController as AdminStudentRegistrationCardController;
 use App\Http\Controllers\Admin\DonationController as AdminDonationController;
 use App\Http\Controllers\Admin\ApplicationController as AdminApplicationController;
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
@@ -73,6 +75,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/banners', [PublicBannerController::class, 'index']);
     Route::get('/banners/featured', [PublicBannerController::class, 'featured']);
     Route::get('/banners/{id}', [PublicBannerController::class, 'show']);
+    Route::get('/student-registration-card', [PublicStudentRegistrationCardController::class, 'show']);
 
     // Public donation endpoints (allow anonymous donations)
     Route::post('/donations/with-payment', [DonationController::class, 'storeWithPayment']); // للتبرعات مع دفع (مسجل أو مجهول)
@@ -187,6 +190,9 @@ Route::prefix('v1')->group(function () {
         Route::put('/banners/{id}', [AdminBannerController::class, 'update']);
         Route::delete('/banners/{id}', [AdminBannerController::class, 'destroy']);
         Route::post('/banners/upload/image', [AdminBannerController::class, 'uploadImage']);
+        Route::get('/student-registration-card', [AdminStudentRegistrationCardController::class, 'show']);
+        Route::put('/student-registration-card', [AdminStudentRegistrationCardController::class, 'update']);
+        Route::post('/student-registration-card/upload-background', [AdminStudentRegistrationCardController::class, 'uploadBackgroundImage']);
 
         // Donations listing
         Route::get('/donations', [AdminDonationController::class, 'index']);

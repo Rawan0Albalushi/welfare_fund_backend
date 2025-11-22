@@ -84,7 +84,7 @@ class TestPaymentAPI extends Command
     private function testCreatePayment(int $amount): ?array
     {
         try {
-            $response = Http::post('http://192.168.1.15:8000/api/v1/payments/create', [
+            $response = Http::post('http://localhost:8000/api/v1/payments/create', [
                 'products' => [
                     [
                         'name' => 'تبرع خيري',
@@ -119,7 +119,7 @@ class TestPaymentAPI extends Command
     private function testPaymentStatus(string $sessionId): ?array
     {
         try {
-            $response = Http::get("http://192.168.1.15:8000/api/v1/payments/status/{$sessionId}");
+            $response = Http::get("http://localhost:8000/api/v1/payments/status/{$sessionId}");
 
             if ($response->successful()) {
                 $data = $response->json();
@@ -139,7 +139,7 @@ class TestPaymentAPI extends Command
     private function testStatusEndpoint(string $endpoint): bool
     {
         try {
-            $response = Http::get("http://192.168.1.15:8000{$endpoint}");
+            $response = Http::get("http://localhost:8000{$endpoint}");
             return $response->successful();
         } catch (\Exception $e) {
             return false;
