@@ -234,9 +234,13 @@ class ThawaniService
                 $paidAmount = $capturedAmount / 1000; // بيسة -> ريال
                 
                 // التحقق من تطابق المبلغ مع مبلغ التبرع المحفوظ
+                // Tolerance محسّن: 0.1% مع حد أقصى 5 ريال (500 بيسة)
                 $expectedAmountBaisa = (int)($donation->amount * 1000);
                 $actualAmountBaisa = (int)$capturedAmount;
-                $tolerance = max(100, (int)($expectedAmountBaisa * 0.01)); // 1% أو 100 بيسة كحد أدنى
+                $tolerance = min(
+                    max(50, (int)($expectedAmountBaisa * 0.001)), // 0.1% أو 50 بيسة كحد أدنى
+                    500 // حد أقصى 5 ريال (500 بيسة)
+                );
                 
                 if (abs($actualAmountBaisa - $expectedAmountBaisa) > $tolerance) {
                     Log::warning('Payment amount mismatch in confirmPayment', [

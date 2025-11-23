@@ -25,16 +25,23 @@ class DonationsController extends Controller
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
-     *         description="Page number (deprecated - now returns all donations)",
+     *         description="Page number",
      *         required=false,
      *         @OA\Schema(type="integer", default=1)
      *     ),
      *     @OA\Parameter(
+     *         name="limit",
+     *         in="query",
+     *         description="Items per page (max 100)",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=50)
+     *     ),
+     *     @OA\Parameter(
      *         name="per_page",
      *         in="query",
-     *         description="Items per page (deprecated - now returns all donations)",
+     *         description="Items per page (alias for limit, max 100)",
      *         required=false,
-     *         @OA\Schema(type="integer", default=10)
+     *         @OA\Schema(type="integer", default=50)
      *     ),
      *     @OA\Parameter(
      *         name="status",
@@ -56,9 +63,20 @@ class DonationsController extends Controller
      *         @OA\JsonContent(
      *             @OA\Property(property="message", type="string", example="Donations retrieved successfully"),
      *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/DonationResource")),
+     *             @OA\Property(property="stats", type="object",
+     *                 @OA\Property(property="total_donations", type="integer"),
+     *                 @OA\Property(property="total_amount", type="number"),
+     *                 @OA\Property(property="paid_donations", type="integer"),
+     *                 @OA\Property(property="pending_donations", type="integer")
+     *             ),
      *             @OA\Property(property="meta", type="object",
      *                 @OA\Property(property="total", type="integer"),
-     *                 @OA\Property(property="showing_all", type="boolean", example=true)
+     *                 @OA\Property(property="per_page", type="integer"),
+     *                 @OA\Property(property="current_page", type="integer"),
+     *                 @OA\Property(property="last_page", type="integer"),
+     *                 @OA\Property(property="from", type="integer"),
+     *                 @OA\Property(property="to", type="integer"),
+     *                 @OA\Property(property="showing_all", type="boolean", example=false)
      *             )
      *         )
      *     ),
@@ -98,11 +116,7 @@ class DonationsController extends Controller
             $query->where('type', $request->type);
         }
 
-        // ترتيب النتائج - عرض جميع التبرعات
-        $donations = $query->orderBy('created_at', 'desc')
-            ->get();
-
-        // إضافة إحصائيات (جميع التبرعات المرتبطة بالمستخدم)
+        // إضافة إحصائيات (جميع التبرعات المرتبطة بالمستخدم) - قبل التصفح
         $userDonationsQuery = Donation::where(function ($q) use ($user) {
             $q->where('user_id', $user->id)
               ->orWhere(function ($subQ) use ($user) {
@@ -122,13 +136,34 @@ class DonationsController extends Controller
             'pending_donations' => $userDonationsQuery->where('status', 'pending')->count(),
         ];
 
+        // دعم التصفح (pagination)
+        $page = $request->input('page', 1);
+        $limit = $request->input('limit', $request->input('per_page', 50));
+        $limit = min($limit, 100); // حد أقصى 100 عنصر في الصفحة
+        
+        // ترتيب النتائج
+        $query->orderBy('created_at', 'desc');
+        
+        // الحصول على العدد الإجمالي قبل التصفح
+        $total = $query->count();
+        
+        // تطبيق التصفح
+        $donations = $query->skip(($page - 1) * $limit)
+            ->take($limit)
+            ->get();
+
         return response()->json([
             'message' => 'Donations retrieved successfully',
             'data' => DonationResource::collection($donations),
             'stats' => $stats,
             'meta' => [
-                'total' => $donations->count(),
-                'showing_all' => true,
+                'total' => $total,
+                'per_page' => $limit,
+                'current_page' => (int) $page,
+                'last_page' => (int) ceil($total / $limit),
+                'from' => $total > 0 ? (($page - 1) * $limit) + 1 : 0,
+                'to' => min($page * $limit, $total),
+                'showing_all' => $total <= $limit && $page == 1,
             ],
         ]);
     }

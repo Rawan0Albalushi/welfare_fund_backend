@@ -44,6 +44,11 @@ return [
         'cancel_url' => env('THAWANI_CANCEL_URL', null),
 		'webhook_secret' => env('THAWANI_WEBHOOK_SECRET'),
 		'webhook_signature_header' => env('THAWANI_WEBHOOK_SIGNATURE_HEADER', 'X-Webhook-Signature'),
+		// قائمة بيضاء لـ IP addresses المسموحة للويبهوك (مفصولة بفواصل)
+		// في حالة عدم التحديد، سيعتمد النظام على التوقيع فقط
+		'allowed_webhook_ips' => env('THAWANI_WEBHOOK_ALLOWED_IPS') 
+			? array_map('trim', explode(',', env('THAWANI_WEBHOOK_ALLOWED_IPS')))
+			: [],
     ],
 
 ];

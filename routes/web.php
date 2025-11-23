@@ -18,8 +18,8 @@ Route::get('/', function () {
  * - التطبيق هو اللي يحتفظ بالـ sessionId محليًا ويستعلم الحالة من الباكند
  */
 
-Route::get('/payment/bridge/success', [App\Http\Controllers\PaymentsController::class, 'bridgeSuccess']);
-Route::get('/payment/bridge/cancel', [App\Http\Controllers\PaymentsController::class, 'bridgeCancel']);
+Route::get('/payment/bridge/success', [App\Http\Controllers\PaymentController::class, 'bridgeSuccess']);
+Route::get('/payment/bridge/cancel', [App\Http\Controllers\PaymentController::class, 'bridgeCancel']);
 
 // Optional: Fallback login route for APIs that trigger auth redirect
 Route::get('/login', function () {

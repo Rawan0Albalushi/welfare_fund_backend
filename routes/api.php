@@ -10,7 +10,6 @@ use App\Http\Controllers\Public\StudentRegistrationCardController as PublicStude
 use App\Http\Controllers\Public\DonationController;
 use App\Http\Controllers\Donations\DonationController as LegacyDonationController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Me\DonationsController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
@@ -96,16 +95,16 @@ Route::prefix('v1')->group(function () {
     Route::get('/payments/callback', [LegacyDonationController::class, 'callback']);
     Route::post('/payments/webhook', [LegacyDonationController::class, 'webhook']);
 
-    // Payment endpoints (Thawani) - New structured endpoints
+    // Payment endpoints (Thawani) - Unified endpoints with improved security
     // Rate limiting: 20 requests per minute for payment creation, 60 for status checks
     Route::middleware('throttle:20,1')->group(function () {
-        Route::post('/payments/create', [PaymentsController::class, 'create']);
-        Route::post('/payments/confirm', [PaymentsController::class, 'confirm']);
-        Route::post('/payments/create-legacy', [PaymentController::class, 'createPayment']);
+        Route::post('/payments/create', [PaymentController::class, 'createPayment']);
+        Route::post('/payments/create-with-donation', [PaymentController::class, 'createWithDonation']);
+        Route::post('/payments/confirm', [PaymentController::class, 'confirm']);
     });
     
     Route::middleware('throttle:60,1')->group(function () {
-        Route::get('/payments/mobile/success', [PaymentsController::class, 'mobileSuccess']);
+        Route::get('/payments/mobile/success', [PaymentController::class, 'mobileSuccess']);
         Route::get('/payments/status/{sessionId}', [PaymentController::class, 'getPaymentStatus']);
         Route::get('/payments', [PaymentController::class, 'index']); // ?session_id=...
     });

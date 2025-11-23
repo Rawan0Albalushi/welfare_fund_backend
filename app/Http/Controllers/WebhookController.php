@@ -15,6 +15,47 @@ class WebhookController extends Controller
      */
     public function handle(Request $request)
     {
+		// التحقق من IP للمصدر (إلزامي في الإنتاج)
+		$allowedIPs = config('services.thawani.allowed_webhook_ips', []);
+		$isProduction = app()->environment('production');
+		
+		if ($isProduction && empty($allowedIPs)) {
+			Log::error('Webhook IP whitelist not configured in production');
+			return response()->json(['ok' => false, 'message' => 'Webhook IP whitelist required in production'], 500);
+		}
+		
+		if (!empty($allowedIPs)) {
+			$clientIP = $request->ip();
+			
+			// التحقق من IP الحقيقي (قد يكون عبر Proxy)
+			$realIP = $request->header('X-Forwarded-For');
+			if ($realIP) {
+				$realIP = trim(explode(',', $realIP)[0]);
+			} else {
+				$realIP = $clientIP;
+			}
+			
+			// في الإنتاج، يجب أن يكون IP مسموحاً
+			if ($isProduction && !in_array($clientIP, $allowedIPs) && !in_array($realIP, $allowedIPs)) {
+				Log::warning('Webhook from unauthorized IP in production', [
+					'client_ip' => $clientIP,
+					'real_ip' => $realIP,
+					'allowed_ips' => $allowedIPs,
+				]);
+				return response()->json(['ok' => false, 'message' => 'Unauthorized IP'], 403);
+			}
+			
+			// في التطوير، نتحقق فقط إذا كانت القائمة محددة
+			if (!$isProduction && !in_array($clientIP, $allowedIPs) && !in_array($realIP, $allowedIPs)) {
+				Log::warning('Webhook from unauthorized IP (development)', [
+					'client_ip' => $clientIP,
+					'real_ip' => $realIP,
+					'allowed_ips' => $allowedIPs,
+				]);
+				// في التطوير، نسمح لكن نسجل تحذير
+			}
+		}
+
 		// التحقق من التوقيع (إلزامي في الإنتاج، اختياري في التطوير)
 		$secret = (string) config('services.thawani.webhook_secret');
 		$isProduction = app()->environment('production');
@@ -111,6 +152,18 @@ class WebhookController extends Controller
             'payment_status_from_webhook' => $status,
         ]);
 
+        // التحقق من انتهاء الجلسة
+        if ($donation->isExpired() && $status !== 'paid') {
+            if ($donation->status !== 'expired') {
+                $donation->update(['status' => 'expired']);
+                Log::info('Webhook: Donation expired', [
+                    'session_id' => $sessionId,
+                    'donation_id' => $donation->donation_id,
+                ]);
+            }
+            return response()->json(['ok' => true]);
+        }
+
         // منع التكرار: لو حالتها Paid لا نعيد الزيادة
         if ($status === 'paid' && $donation->status !== 'paid') {
             DB::transaction(function () use ($donation, $amountBaisa, $sessionId) {
@@ -131,9 +184,13 @@ class WebhookController extends Controller
                     $paidAmount = ((int) $amountBaisa) / 1000.0;
                     
                     // التحقق من تطابق المبلغ مع مبلغ التبرع المحفوظ
+                    // Tolerance محسّن: 0.1% مع حد أقصى 5 ريال (500 بيسة)
                     $expectedAmountBaisa = (int)($donation->amount * 1000);
                     $actualAmountBaisa = (int)$amountBaisa;
-                    $tolerance = max(100, (int)($expectedAmountBaisa * 0.01)); // 1% أو 100 بيسة كحد أدنى
+                    $tolerance = min(
+                        max(50, (int)($expectedAmountBaisa * 0.001)), // 0.1% أو 50 بيسة كحد أدنى
+                        500 // حد أقصى 5 ريال (500 بيسة)
+                    );
                     
                     if (abs($actualAmountBaisa - $expectedAmountBaisa) > $tolerance) {
                         Log::warning('Webhook: Payment amount mismatch', [
@@ -151,6 +208,7 @@ class WebhookController extends Controller
                 $donation->update([
                     'status'      => 'paid',
                     'paid_amount' => $paidAmount,
+                    'paid_at'     => now(),
                 ]);
 
                 // تحديث مبلغ الحملة مع lock
