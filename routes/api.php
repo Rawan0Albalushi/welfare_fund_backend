@@ -27,6 +27,10 @@ use App\Http\Controllers\Admin\PermissionController as AdminPermissionController
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Public\SettingPageController as PublicSettingPageController;
 use App\Http\Controllers\Admin\SettingPageController as AdminSettingPageController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\FcmTokenController;
+use App\Services\FcmService;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -142,6 +146,27 @@ Route::prefix('v1')->group(function () {
         Route::get('/donations/{id}', [DonationsController::class, 'show']);
     });
 
+    // FCM Token endpoint (require authentication)
+    Route::middleware('auth:sanctum')->post('/fcm-token', [FcmTokenController::class, 'store']);
+
+    // Test push notification endpoint
+    Route::get('/test-push/{id}', function ($id, FcmService $fcm) {
+        $record = DB::table('fcm_tokens')->where('id', $id)->first();
+
+        if (!$record) {
+            return response()->json(['error' => 'Token not found']);
+        }
+
+        $fcm->sendToToken(
+            $record->fcm_token,
+            'تنبيه تجريبي 🔔',
+            'تم اختبار نظام الإشعارات بنجاح ✅',
+            ['type' => 'test_notification']
+        );
+
+        return response()->json(['status' => 'Notification sent successfully ✅']);
+    });
+
     // Admin endpoints (require auth + admin role)
     Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
         // Admin auth (within v1)
@@ -234,12 +259,33 @@ Route::prefix('v1')->group(function () {
         Route::post('/settings-pages', [AdminSettingPageController::class, 'store']);
         Route::get('/settings-pages/{key}', [AdminSettingPageController::class, 'show']);
         Route::put('/settings-pages/{key}', [AdminSettingPageController::class, 'update']);
+
+        // Notifications
+        Route::post('/send-notification', [AdminNotificationController::class, 'sendNotification']);
     });
 });
 
 // Authenticated user endpoint
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+// Test push notification endpoint (outside v1 for compatibility)
+Route::get('/test-push/{id}', function ($id, FcmService $fcm) {
+    $record = DB::table('fcm_tokens')->where('id', $id)->first();
+
+    if (!$record) {
+        return response()->json(['error' => 'Token not found']);
+    }
+
+    $fcm->sendToToken(
+        $record->fcm_token,
+        'تنبيه تجريبي 🔔',
+        'تم اختبار نظام الإشعارات بنجاح ✅',
+        ['type' => 'test_notification']
+    );
+
+    return response()->json(['status' => 'Notification sent successfully ✅']);
 });
 
 // (اختياري) Alias خارجي للويبهوك خارج v1 — سجّلي واحد فقط في Thawani Dashboard

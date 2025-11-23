@@ -76,4 +76,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(AuditLog::class);
     }
+
+    /**
+     * Get the user's FCM tokens.
+     */
+    public function fcmTokens()
+    {
+        return $this->hasMany(FcmToken::class);
+    }
 }
