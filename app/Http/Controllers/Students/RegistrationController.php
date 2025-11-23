@@ -202,10 +202,11 @@ class RegistrationController extends Controller
      *                     @OA\Property(property="income_level", type="string", enum={"low", "medium", "high"}, example="low"),
      *                     @OA\Property(property="family_size", type="integer", example=6)
      *                 ),
-     *                 @OA\Property(property="program", type="object",
-     *                     @OA\Property(property="id", type="integer", example=1),
-     *                     @OA\Property(property="title", type="string", example="Emergency Financial Aid")
-     *                 ),
+                 *                 @OA\Property(property="program", type="object",
+                 *                     @OA\Property(property="id", type="integer", example=1),
+                 *                     @OA\Property(property="title_ar", type="string", example="دعم مالي عاجل"),
+                 *                     @OA\Property(property="title_en", type="string", example="Emergency Financial Aid")
+                 *                 ),
      *                 @OA\Property(property="created_at", type="string", format="date-time", example="2025-08-12T19:33:12.000000Z"),
      *                 @OA\Property(property="updated_at", type="string", format="date-time", example="2025-08-12T19:33:12.000000Z")
      *             )
@@ -230,7 +231,7 @@ class RegistrationController extends Controller
         $user = $request->user();
         
 		$registration = StudentRegistration::where('user_id', $user->id)
-			->with(['program:id,title,title_ar,title_en'])
+			->with(['program:id,title_ar,title_en'])
             ->latest()
             ->first();
 
@@ -253,7 +254,8 @@ class RegistrationController extends Controller
                 'financial' => $registration->financial_json,
                 'program' => $registration->program ? [
                     'id' => $registration->program->id,
-                    'title' => $registration->program->title,
+                    'title_ar' => $registration->program->title_ar,
+                    'title_en' => $registration->program->title_en,
                 ] : null,
                 'created_at' => $registration->created_at?->toISOString(),
                 'updated_at' => $registration->updated_at?->toISOString(),

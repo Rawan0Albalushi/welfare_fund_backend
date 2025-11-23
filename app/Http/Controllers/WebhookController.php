@@ -42,9 +42,17 @@ class WebhookController extends Controller
 		Log::info('Thawani Webhook received', [
 			'signature_verified' => !empty($secret),
 			'ip' => $request->ip(),
+			'has_payload' => !empty($request->all()),
 		]);
 
         $payload  = $request->all();
+        
+        // تسجيل محتوى الويبهوك (محدود للتحليل)
+        Log::info('Thawani Webhook payload structure', [
+            'payload_keys' => array_keys($payload),
+            'event_type' => $payload['event_type'] ?? $payload['type'] ?? 'not_set',
+            'has_data' => isset($payload['data']),
+        ]);
 
         // بعض الأنظمة ترسل event_type + data
         $event    = $payload['event_type'] ?? $payload['type'] ?? null;
@@ -82,9 +90,26 @@ class WebhookController extends Controller
 
         $donation = Donation::where('payment_session_id', $sessionId)->first();
         if (!$donation) {
-            Log::warning('Webhook: donation not found for session', ['session_id' => $sessionId]);
+            Log::warning('Webhook: donation not found for session', [
+                'session_id' => $sessionId,
+                'all_sessions_in_db' => Donation::whereNotNull('payment_session_id')
+                    ->pluck('payment_session_id')
+                    ->toArray(),
+                'payload_structure' => [
+                    'top_level' => array_keys($payload),
+                    'data_level' => isset($payload['data']) ? array_keys($payload['data']) : null,
+                ]
+            ]);
             return response()->json(['ok' => true]); // نرجع 200 عشان ما يعيدوا الإرسال بلا نهاية
         }
+        
+        // تسجيل معلومات التبرع الموجود
+        Log::info('Webhook: donation found', [
+            'session_id' => $sessionId,
+            'donation_id' => $donation->donation_id,
+            'donation_status' => $donation->status,
+            'payment_status_from_webhook' => $status,
+        ]);
 
         // منع التكرار: لو حالتها Paid لا نعيد الزيادة
         if ($status === 'paid' && $donation->status !== 'paid') {
@@ -144,8 +169,30 @@ class WebhookController extends Controller
         } elseif (in_array($status, ['cancelled', 'canceled', 'failed'])) {
             if ($donation->status !== 'cancelled' && $donation->status !== 'paid') {
                 $donation->update(['status' => 'cancelled']);
+                Log::info('Webhook: Donation cancelled', [
+                    'session_id' => $sessionId,
+                    'donation_id' => $donation->donation_id,
+                    'status' => $status,
+                ]);
             }
+        } else {
+            // حالة غير متوقعة
+            Log::warning('Webhook: Unexpected payment status', [
+                'session_id' => $sessionId,
+                'donation_id' => $donation->donation_id,
+                'status' => $status,
+                'donation_status' => $donation->status,
+            ]);
         }
+
+        // تسجيل نهائي للحالة
+        $donation->refresh();
+        Log::info('Webhook: processing completed', [
+            'session_id' => $sessionId,
+            'donation_id' => $donation->donation_id,
+            'final_donation_status' => $donation->status,
+            'webhook_status_processed' => $status,
+        ]);
 
         return response()->json(['ok' => true]);
     }

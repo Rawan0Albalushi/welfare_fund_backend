@@ -556,14 +556,24 @@ class PaymentsController extends Controller
         $actualSessionId = $sessionId ?? $donation->payment_session_id;
 
         // إذا كان لدينا session_id، تأكد من حالة الدفع من ثواني وتحديث قاعدة البيانات
+        $paymentStatusFromThawani = null;
         if ($actualSessionId) {
             try {
                 // التحقق من حالة الدفع من ثواني (idempotent)
                 if ($donation->status !== 'paid' && $donation->payment_session_id) {
                     $sessionDetails = $this->thawaniService->getSessionDetails($donation->payment_session_id);
-                    $paymentStatus = $sessionDetails['payment_status'] ?? null;
+                    $paymentStatusFromThawani = $sessionDetails['payment_status'] ?? null;
                     
-                    if ($paymentStatus === 'paid') {
+                    // تسجيل حالة الدفع من Thawani للتحليل
+                    Log::info('Mobile success: Payment status check', [
+                        'donation_id' => $donationId,
+                        'session_id' => $actualSessionId,
+                        'payment_status_from_thawani' => $paymentStatusFromThawani,
+                        'donation_status' => $donation->status,
+                        'session_details_keys' => array_keys($sessionDetails ?? [])
+                    ]);
+                    
+                    if ($paymentStatusFromThawani === 'paid') {
                         // تحويل المبلغ من بيسة إلى ريال عماني
                         $capturedAmount = $sessionDetails['captured_amount'] ?? $sessionDetails['total_amount'] ?? 0;
                         $paidAmount = $capturedAmount / 1000; // بيسة -> ريال
@@ -592,6 +602,9 @@ class PaymentsController extends Controller
                         // التحقق مرة أخرى بعد lock
                         if ($donation->status === 'paid') {
                             DB::commit();
+                            Log::info('Mobile success: Donation already paid (after lock)', [
+                                'donation_id' => $donationId,
+                            ]);
                         } else {
                             $donation->update([
                                 'status' => 'paid',
@@ -614,13 +627,32 @@ class PaymentsController extends Controller
                             Log::info('Mobile success: Payment confirmed and donation updated', [
                                 'donation_id' => $donationId,
                                 'session_id' => $actualSessionId,
+                                'paid_amount' => $paidAmount,
                             ]);
                         }
-                    } elseif ($paymentStatus === 'canceled') {
-                        $donation->update(['status' => 'canceled']);
+                    } elseif ($paymentStatusFromThawani === 'canceled' || $paymentStatusFromThawani === 'cancel') {
+                        $donation->update(['status' => 'cancelled']);
                         Log::info('Mobile success: Payment was canceled', [
                             'donation_id' => $donationId,
-                            'session_id' => $actualSessionId
+                            'session_id' => $actualSessionId,
+                            'payment_status' => $paymentStatusFromThawani
+                        ]);
+                    } elseif ($paymentStatusFromThawani === 'unpaid' || $paymentStatusFromThawani === null) {
+                        // حالة مهمة: الدفع غير مؤكد بعد
+                        Log::warning('Mobile success: Payment status is unpaid or null', [
+                            'donation_id' => $donationId,
+                            'session_id' => $actualSessionId,
+                            'payment_status_from_thawani' => $paymentStatusFromThawani,
+                            'donation_status' => $donation->status,
+                            'message' => 'Payment has not been confirmed yet. This may be a timing issue or the payment was not completed.'
+                        ]);
+                    } else {
+                        // حالة غير متوقعة
+                        Log::warning('Mobile success: Unexpected payment status', [
+                            'donation_id' => $donationId,
+                            'session_id' => $actualSessionId,
+                            'payment_status_from_thawani' => $paymentStatusFromThawani,
+                            'donation_status' => $donation->status,
                         ]);
                     }
                 }
@@ -628,7 +660,8 @@ class PaymentsController extends Controller
                 Log::error('Mobile success: Failed to confirm payment status', [
                     'donation_id' => $donationId,
                     'session_id' => $actualSessionId,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
                 // نستمر في إرجاع البيانات حتى لو فشل التحقق
             }
@@ -643,12 +676,20 @@ class PaymentsController extends Controller
             $campaignTitle = $donation->campaign->title;
         }
 
+        // إرجاع حالة التبرع الفعلية بدلاً من "success" دائماً
         return response()->json([
-            'status' => 'success',
+            'status' => $donation->status === 'paid' ? 'success' : 'pending',
+            'donation_status' => $donation->status,
             'donation_id' => $donation->donation_id,
             'session_id' => $actualSessionId,
             'amount' => (float) $donation->amount,
             'campaign_title' => $campaignTitle,
+            'payment_status_from_thawani' => $paymentStatusFromThawani,
+            'message' => $donation->status === 'paid' 
+                ? 'تم التبرع بنجاح' 
+                : ($paymentStatusFromThawani === 'unpaid' 
+                    ? 'قيد انتظار تأكيد الدفع' 
+                    : 'حالة التبرع: ' . $donation->status)
         ]);
     }
 }
