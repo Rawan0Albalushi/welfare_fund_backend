@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             DonationCampaignsSeeder::class,
             AdminUserSeeder::class,
             StudentRegistrationCardSeeder::class,
+            SettingPageSeeder::class,
         ]);
 
         // \App\Models\User::factory(10)->create();

@@ -25,6 +25,8 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\PermissionController as AdminPermissionController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Public\SettingPageController as PublicSettingPageController;
+use App\Http\Controllers\Admin\SettingPageController as AdminSettingPageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -55,6 +57,10 @@ Route::middleware('auth:sanctum')->prefix('students/registration')->group(functi
     Route::post('/{id}/documents', [App\Http\Controllers\Students\RegistrationController::class, 'uploadDocuments']);
 });
 
+// Public settings pages endpoints (without v1 prefix for compatibility)
+Route::get('/settings-pages', [PublicSettingPageController::class, 'index']);
+Route::get('/settings-pages/{key}', [PublicSettingPageController::class, 'show']);
+
 // Public routes (no authentication required)
 Route::prefix('v1')->group(function () {
     // Public catalog endpoints
@@ -75,6 +81,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/banners/featured', [PublicBannerController::class, 'featured']);
     Route::get('/banners/{id}', [PublicBannerController::class, 'show']);
     Route::get('/student-registration-card', [PublicStudentRegistrationCardController::class, 'show']);
+
+    // Public settings pages endpoints
+    Route::get('/settings-pages', [PublicSettingPageController::class, 'index']);
+    Route::get('/settings-pages/{key}', [PublicSettingPageController::class, 'show']);
 
     // Public donation endpoints (allow anonymous donations)
     Route::post('/donations/with-payment', [DonationController::class, 'storeWithPayment']); // للتبرعات مع دفع (مسجل أو مجهول)
@@ -218,6 +228,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/permissions/{id}', [AdminPermissionController::class, 'show']);
         Route::put('/permissions/{id}', [AdminPermissionController::class, 'update']);
         Route::delete('/permissions/{id}', [AdminPermissionController::class, 'destroy']);
+
+        // Settings pages management
+        Route::get('/settings-pages', [AdminSettingPageController::class, 'index']);
+        Route::post('/settings-pages', [AdminSettingPageController::class, 'store']);
+        Route::get('/settings-pages/{key}', [AdminSettingPageController::class, 'show']);
+        Route::put('/settings-pages/{key}', [AdminSettingPageController::class, 'update']);
     });
 });
 
