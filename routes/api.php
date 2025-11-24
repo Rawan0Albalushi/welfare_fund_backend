@@ -12,6 +12,7 @@ use App\Http\Controllers\Donations\DonationController as LegacyDonationControlle
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Me\DonationsController;
+use App\Http\Controllers\Me\EditProfileController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\ProgramController as AdminProgramController;
 use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
@@ -144,6 +145,10 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->prefix('me')->group(function () {
         Route::get('/donations', [DonationsController::class, 'index']);
         Route::get('/donations/{id}', [DonationsController::class, 'show']);
+        
+        // Profile editing endpoints
+        Route::get('/edit/profile', [EditProfileController::class, 'show']);
+        Route::patch('/edit/profile', [EditProfileController::class, 'update']);
     });
 
     // FCM Token endpoint (require authentication)
